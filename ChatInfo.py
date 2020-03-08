@@ -22,6 +22,7 @@ class Chat:
     async def parse(self, raw_message: str):
         '''
         parses a raw message from twitch irc client into readable/iterable data structures
+        basic form of a raw message: <tags> PRIVMSG #<user> :<msg>
         EXAMPLE FORMATTED RAW MESSAGE (this would all be one line when we get it from twitch)
             @
             badge-info=subscriber/17;
@@ -40,6 +41,7 @@ class Chat:
             user-type= :gay_zach!gay_zach@gay_zach.tmi.twitch.tv
 
             PRIVMSG #gay_zach :lorem ipsum
+        https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
         '''
         msg = raw_message
         tags = msg[1:msg.find('PRIVMSG ')].split(';')
@@ -78,4 +80,4 @@ class Chat:
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         follower = await self.API.follows_me(user_id)
         badges = self.tags['badges'].split(',')
-        return UserInfo.User(username, user_id, broadcaster, moderator, subscriber, sub_length, follower, badges)
+        return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, isfollower=follower, badges=badges)

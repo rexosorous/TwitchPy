@@ -19,10 +19,10 @@ reference: https://dev.twitch.tv/docs/api/reference
 
 
 class Kraken:
-    def __init__(self, broadcaster_name, client_id):
+    def __init__(self, name: str, cid: str):
         self.base_url = 'https://api.twitch.tv/helix'
-        self.header = {'Client-ID': client_id}
-        self.broadcaster_name = broadcaster_name        # the channel that the bot is connecting to
+        self.header = {'Client-ID': cid}
+        self.broadcaster_name = name        # the channel that the bot is connecting to
         self.broadcaster_id = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()['data'][0]['id']
 
 

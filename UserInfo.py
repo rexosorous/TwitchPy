@@ -6,12 +6,12 @@ we could've used a dict, but i want to keep this open to adding more functionali
 
 
 class User:
-    def __init__(self, name: str, user_id: str, broadcaster: bool, moderator: bool, subscriber: bool, sub_length: int, follower: str, badges: [str]):
+    def __init__(self, name: str, uid: str, isbroadcaster: bool, ismod: bool, issub: bool, sublength: int, isfollower: str, badges: [str]):
         self.name = name
-        self.id = user_id
-        self.broadcaster = broadcaster
-        self.moderator = moderator
-        self.subscriber = subscriber
-        self.sub_length = sub_length
-        self.follower = follower
+        self.id = uid
+        self.broadcaster = isbroadcaster
+        self.moderator = ismod
+        self.subscriber = issub
+        self.sub_length = sublength
+        self.follower = isfollower
         self.badges = badges

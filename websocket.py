@@ -12,7 +12,7 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 
 
-class WebSocket:
+class IRC:
     def __init__(self, API, token: str, user: str, channel: str):
         self.reader = None
         self.writer = None
@@ -48,7 +48,8 @@ class WebSocket:
 
     async def send(self, msg: str):
         '''
-        sends a message to twitch chat
+        formats and sends a message to twitch chat
+        https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
         '''
         self.writer.write(f'PRIVMSG #{self.channel} :{msg}\r\n'.encode())
 
@@ -73,19 +74,21 @@ class WebSocket:
             msg = await self.reader.readline()
             msg = msg.decode()
 
-            if 'PRIVMSG' in msg:
+
+            # tells twitch that we want our connection to stay alive
+            # twitch will occasionally send 'PING :tmi.twitch.tv' and expects 'PONG :tmi.twitch.tv' back to keep the connection alive
+            # https://dev.twitch.tv/docs/irc/guide#connecting-to-twitch-irc
+            if msg.startswith('PING'):
+                await self.basic_send('PONG :tmi.twitch.tv')
+
+            # if a message has PRIVMSG in it, it's a public message in twitch chat
+            elif 'PRIVMSG' in msg:
                 chat = ChatInfo.Chat(self.API)
                 await chat.parse(msg)
                 print(f'{chat.user.name}: {chat.message}')
                 await self.send('pong')
                 # log
                 # execute commands
-
-
-            # TEMP
-            # tells twitch that we want our connection to stay alive
-            if 'PING' in msg:
-                await self.basic_send('PONG :tmi.twitch.tv')
 
             # TEMP
             # kills the bot 'gracefully'

@@ -14,7 +14,7 @@ import json
 import requests
 
 import APIHandler
-import websocket
+import Websocket
 
 
 
@@ -27,8 +27,8 @@ the most top level structure
 
 class Client:
     def __init__(self, token: str, user: str, channel: str, client_id: str):
-        self.API = APIHandler.Kraken(channel, client_id)
-        self.connection = websocket.WebSocket(self.API, token, user, channel)
+        self.API = APIHandler.Kraken(name=channel, cid=client_id)
+        self.connection = Websocket.IRC(self.API, token=token, user=user, channel=channel)
         self.listen_loop = None
 
 

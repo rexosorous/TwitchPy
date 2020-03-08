@@ -1,6 +1,5 @@
 import json
 import TwitchBot
-from time import sleep
 
 
 with open('login_info.json', 'r') as file:
