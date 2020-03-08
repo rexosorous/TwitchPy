@@ -11,10 +11,14 @@ which contains information regarding the message like
 
 
 class Chat:
-    def __init__(self, API):
+    def __init__(self, API, writer, channel):
         self.API = API
+        self.writer = writer
+        self.channel = channel
         self.tags = dict()
-        self.message = ''
+        self.full_msg = ''      # includes bot prefix and command name
+        self.msg = ''           # includes the message without prefix or command
+        self.split_msg = []     # msg split by spaces
         self.user = None
 
 
@@ -48,7 +52,7 @@ class Chat:
         msg = msg[msg.find('PRIVMSG ')+9:]
         username = msg[:msg.find(':')-1]
         msg = msg[msg.find(':')+1:-2]
-        self.message = msg
+        self.full_msg = msg
 
         for t in tags:
             key = t[:t.find('=')]
@@ -81,3 +85,12 @@ class Chat:
         follower = await self.API.follows_me(user_id)
         badges = self.tags['badges'].split(',')
         return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, isfollower=follower, badges=badges)
+
+
+
+    async def send(self, msg: str):
+        '''
+        formats and sends a message to twitch chat
+        https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
+        '''
+        self.writer.write(f'PRIVMSG #{self.channel} :{msg}\r\n'.encode())

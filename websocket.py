@@ -13,14 +13,20 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 
 class IRC:
-    def __init__(self, API, token: str, user: str, channel: str):
+    def __init__(self, API, commands, token: str, user: str, channel: str):
         self.reader = None
         self.writer = None
 
         self.API = API              # API connection
+        self.commands = commands    # command handler
         self.token = token          # oauth token. MUST start with 'oauth:'
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
+
+
+
+    def add_commands(self, cmds):
+        self.commands = cmds
 
 
 
@@ -83,12 +89,10 @@ class IRC:
 
             # if a message has PRIVMSG in it, it's a public message in twitch chat
             elif 'PRIVMSG' in msg:
-                chat = ChatInfo.Chat(self.API)
+                chat = ChatInfo.Chat(self.API, self.writer, self.channel)
                 await chat.parse(msg)
-                print(f'{chat.user.name}: {chat.message}')
-                await self.send('pong')
+                await self.commands.choose_command(chat)
                 # log
-                # execute commands
 
             # TEMP
             # kills the bot 'gracefully'
