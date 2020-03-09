@@ -5,7 +5,7 @@ allows the user to "catch" these events by creating a child of this class like:
         def __init__(self):
             super().__init__()
 
-        def on_ready(self):
+        async def on_ready(self):
             print('hello world!')
 and then passing on this created class when the twitch bot is instantiatied like:
     bot = TwitchBot.Client(login_info, UserClass)
@@ -19,7 +19,9 @@ as defined below.
 
 class Events:
     def __init__(self):
-        pass
+        self.API = None
+        self.IRC = None
+
 
     def on_ready(self):
         pass
@@ -27,20 +29,23 @@ class Events:
     def on_run(self):
         pass
 
-    def on_msg(self, chat):
+    async def on_connect(self):
         pass
 
-    def on_cmd(self, chat):
+    async def on_msg(self, chat):
         pass
 
-    def on_bad_cmd(self, chat):
+    async def on_cmd(self, chat):
         pass
 
-    def on_death(self):
+    async def on_bad_cmd(self, chat):
         pass
 
-    def on_expected_death(self):
+    async def on_death(self):
         pass
 
-    def on_unexpected_death(self):
+    async def on_expected_death(self):
+        pass
+
+    async def on_unexpected_death(self):
         pass

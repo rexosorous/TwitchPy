@@ -1,6 +1,28 @@
 import json
 import TwitchBot
 import Commands
+import Events
+
+
+
+class EventHandler(Events.Events):
+    def __init__(self):
+        super().__init__()
+
+    def on_ready(self):
+        print('bot is ready to run')
+
+    async def on_connect(self):
+        await self.IRC.send('bot is live')
+
+    async def on_unexpected_death(self):
+        await self.IRC.send('bot reached an unknown issue')
+
+    async def on_expected_death(self):
+        await self.IRC.send('gracefully killing bot...')
+
+    async def on_death(self):
+        await self.IRC.send('bot is no longer live')
 
 
 
@@ -8,8 +30,6 @@ class TestBot(Commands.Cog):
     def __init__(self, bot):
         super().__init__(prefix='!')
         self.bot = bot
-
-
 
     @Commands.create(name='ping')
     async def func1(self, chat):
@@ -22,6 +42,11 @@ class TestBot(Commands.Cog):
     @Commands.create(name='ping', argcount=3)
     async def func3(self, chat):
         await self.bot.IRC.send('in func3')
+
+    @Commands.create(aliases=['stop'])
+    async def kill(self, chat):
+        bot.kill()
+
 
 
 class EvenTestierBot(Commands.Cog):
@@ -41,7 +66,7 @@ if __name__ == '__main__':
     with open('login_info.json', 'r') as file:
         login_info = json.load(file)
 
-    bot = TwitchBot.Client(**login_info)
+    bot = TwitchBot.Client(**login_info, events=EventHandler())
     bot.add_cog(TestBot(bot))
     bot.add_cog(EvenTestierBot(bot.get_IRC()))
     bot.run()

@@ -17,6 +17,7 @@ import requests
 
 import APIHandler
 import Commands
+from errors import *
 import Events
 import Websocket
 
@@ -36,7 +37,14 @@ class Client:
         self.API = APIHandler.Kraken(name=channel, cid=client_id)
         self.IRC = Websocket.IRC(self.API, self.commands, self.events, token=token, user=user, channel=channel)
         self.listen_loop = None
+        self._init_events()
         self.events.on_ready()
+
+
+
+    def _init_events(self):
+        self.events.API = self.API
+        self.events.IRC = self.IRC
 
 
 
@@ -60,12 +68,7 @@ class Client:
 
             self.listen_loop.run_until_complete(self.IRC.connect())
             self.listen_loop.run_until_complete(self.IRC.listen())
-        except KeyboardInterrupt:
-            self.events.on_expected_death()
-        except:
-            self.events.on_unexpected_death()
         finally:
-            self.events.on_death()
             self.listen_loop.close()
 
 
@@ -87,3 +90,8 @@ class Client:
             API.get_viewers()
         '''
         return self.API
+
+
+
+    def kill(self):
+        raise ExpectedExit
