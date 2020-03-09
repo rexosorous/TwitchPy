@@ -107,7 +107,7 @@ class Command:
 
 
 
-def create(name: str='', aliases: [str]=[], argcount: int=-1):
+def create(*, name: str='', aliases: [str]=[], argcount: int=-1):
     '''
     a decorator function to create new commands
     must use the following syntax:

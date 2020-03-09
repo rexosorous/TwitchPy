@@ -29,7 +29,7 @@ the most top level structure
 
 
 class Client:
-    def __init__(self, token: str, user: str, channel: str, client_id: str):
+    def __init__(self, *, token: str, user: str, channel: str, client_id: str):
         self.commands = set()
         self.API = APIHandler.Kraken(name=channel, cid=client_id)
         self.IRC = Websocket.IRC(self.API, self.commands, token=token, user=user, channel=channel)
