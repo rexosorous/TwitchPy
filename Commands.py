@@ -4,7 +4,7 @@ import inspect
 
 '''
 all command related functionalities
-uses a cog system to so that users can create multiple classes (cogs)
+uses a cog system so that users can create multiple classes (cogs)
 each with their own functions to add commands to the bot
 NOTE: two cogs can have commands with the same name and both will execute
 NOTE: cogs can have different prefixes
@@ -59,8 +59,12 @@ class Cog:
         # we do it this way instead of
         #   if command in self.all_commands
         # because we want to allow users to have commands with spaces in it
+        # we need to check for a space after the 'command' or if there's nothing after the 'command'
+        # if we have two commands: 'test' and 'test2'
+        # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
+        # so we check if '!test' has a space after it or if there's nothing after to avoid it
         for command in self.all_commands:
-            if msg.startswith(command):
+            if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
                 chat.msg = msg[len(command)+1:]
                 chat.split_msg = chat.msg.split(' ')
                 inst = self.all_commands[command].instance
