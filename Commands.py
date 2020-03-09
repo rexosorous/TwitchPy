@@ -51,7 +51,7 @@ class Cog:
         determines which command to execute, if any
         '''
         if not chat.full_msg.startswith(self.prefix):  # first determine if the bot is even being called
-            return
+            return 1
 
         msg = chat.full_msg[len(self.prefix):]         # remove the prefix from the message
 
@@ -67,9 +67,11 @@ class Cog:
             if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
                 chat.msg = msg[len(command)+1:]
                 chat.split_msg = chat.msg.split(' ')
-                inst = self.all_commands[command].instance
-                await self.all_commands[command].func(inst, chat)
-                return 0   # code 0 is normal function
+
+                if command.argcount == -1 or command.argcount == len(chat.split_msg): # check if the chat message has the correct amount of arguments
+                    inst = self.all_commands[command].instance
+                    await self.all_commands[command].func(inst, chat)
+                    return 0   # code 0 is normal function
 
         # if we've reached this point, then there exists no command
         # that the user is trying to call
@@ -84,17 +86,18 @@ class Command:
     '''
     more or less just a struct to contain basic info on the command
     '''
-    def __init__(self, func, name: str='', aliases: [str]=[]):
+    def __init__(self, func, name: str='', aliases: [str]=[], argcount: int=-1):
         self.func = func
         self.name = name
         self.aliases = aliases
+        self.argcount = argcount
 
 
 
 
 
 
-def create(name: str='', aliases: [str]=[]):
+def create(name: str='', aliases: [str]=[], argcount: int=-1):
     '''
     a decorator function to create new commands
     must use the following syntax:
@@ -105,9 +108,21 @@ def create(name: str='', aliases: [str]=[]):
     kwarg name (optional):      what the user needs to type to execute the command
                                 if not given, will default to the function name
     kwarg aliases (optional):   any additional name to execute this command
+    kwarg argcount (optional):  how many arguments the command should expect
+                                if specified, bot will not execute the command if the argcounts don't match
+                                    ex: @commands.create(name='test', argcount=2)
+                                            def myfunc(self, chat):
+                                                print('hello world')
+
+                                        >> test lorem ipsum     <--- this is the only chat message that will execute myfunc
+                                        << hello world
+                                        >> test
+                                        >> test lorem
+                                        >> test lorem ipsum dolor
+                                if not specified, bot will execute the command regardless of how many args there are
     '''
     def decorator(func):
         cmd_name = name or func.__name__
-        cmd = Command(func, name=cmd_name, aliases=aliases)
+        cmd = Command(func, name=cmd_name, aliases=aliases, argcount=argcount)
         return cmd
     return decorator

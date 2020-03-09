@@ -18,10 +18,10 @@ class TestBot(Commands.Cog):
 
 class EvenTestierBot(Commands.Cog):
     def __init__(self, IRC):
-        super().__init__(prefix='!')
+        super().__init__(prefix='$')
         self.IRC = IRC
 
-    @Commands.create(name='ping2')
+    @Commands.create(name='ping')
     async def ping(self, chat):
         await self.IRC.send('pong pong')
 
