@@ -41,7 +41,7 @@ class Kraken:
 
     async def get_user_info(self, username: str) -> dict:
         '''
-        gets user info based on their username, not user id
+        gets viewer info based on their username, not user id
         expected response (not output):
         {
             'data':
@@ -67,7 +67,7 @@ class Kraken:
 
     async def get_my_followers(self) -> dict:
         '''
-        gets all users who follow the broadcaster by the broadcaster id (cannot use username)
+        gets all viewers who follow the broadcaster by the broadcaster id (cannot use username)
         returns a dict whose keys are the usernames and whose values are the user's id
         '''
         followers = dict()
@@ -82,7 +82,7 @@ class Kraken:
 
     async def follows_me(self, user_id: str) -> bool:
         '''
-        checks to see if a user is following the broadcaster by user id (cannot use username)
+        checks to see if a viewer is following the broadcaster by user id (cannot use username)
         returns a bool value
         '''
         response = requests.get(f'{self.base_url}/users/follows?to_id={self.broadcaster_id}&from_id={user_id}', headers=self.header).json()
@@ -92,7 +92,7 @@ class Kraken:
 
     async def get_viewers(self) -> dict:
         '''
-        gets all users who are currently in chat for channel_name
+        gets all viewers who are currently in chat for channel_name
         expected output:
         {
             "_links": {},

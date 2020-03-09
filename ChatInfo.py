@@ -3,7 +3,7 @@ import UserInfo
 
 
 '''
-an object created whenever a user sends a message
+an object created whenever a viewer sends a message
 which contains information regarding the message like
     the message being sent, who sent it, and whatever else is associated with the message
 '''
@@ -17,7 +17,7 @@ class Chat:
         self.channel = channel
         self.tags = dict()
         self.full_msg = ''      # includes bot prefix and command name
-        self.msg = ''           # includes the message without prefix or command
+        self.msg = ''           # includes the message without prefix or command name
         self.split_msg = []     # msg split by spaces
         self.user = None
 
@@ -65,7 +65,7 @@ class Chat:
 
     async def get_user(self) -> UserInfo:
         '''
-        creates a user object from the user who types in chat
+        creates a user object from the viewer who types in chat
         contains basic information about them:
             username
             user id

@@ -1,6 +1,7 @@
 import asyncio
 
 import ChatInfo
+from Exceptions import *
 
 
 
@@ -22,11 +23,6 @@ class IRC:
         self.token = token          # oauth token. MUST start with 'oauth:'
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
-
-
-
-    def add_commands(self, cmds):
-        self.commands = cmds
 
 
 
@@ -91,7 +87,18 @@ class IRC:
             elif 'PRIVMSG' in msg:
                 chat = ChatInfo.Chat(self.API, self.writer, self.channel)
                 await chat.parse(msg)
-                await self.commands.choose_command(chat)
+
+                error_code = 1
+                # cog.choose_command will return 0 if it found a command to execute
+                # so between multiple cogs, if any of them executed a command,
+                # then error_code will become 0 and we're in the clear
+                # if none of them return 0, then error code will be 1 and
+                # that means that no command was executed
+                for cog in self.commands:
+                        error_code *= await cog.choose_command(chat)
+
+                if error_code == 1:    # code 0 is good, code 1 is bad
+                    raise CommandNotFound
                 # log
 
             # TEMP

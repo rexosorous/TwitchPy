@@ -1,16 +1,18 @@
 import inspect
 
-from Exceptions import *
-
 
 
 '''
-all command related functions
+all command related functionalities
+uses a cog system to so that users can create multiple classes (cogs)
+each with their own functions to add commands to the bot
+NOTE: two cogs can have commands with the same name and both will execute
+NOTE: cogs can have different prefixes
 '''
 
 
 
-class Handler:
+class Cog:
     '''
     handles command interataction including
         * storing commands
@@ -63,11 +65,11 @@ class Handler:
                 chat.split_msg = chat.msg.split(' ')
                 inst = self.all_commands[command].instance
                 await self.all_commands[command].func(inst, chat)
-                return
+                return 0   # code 0 is normal function
 
         # if we've reached this point, then there exists no command
         # that the user is trying to call
-        raise InvalidCommand
+        return 1    # code 1 is bad
 
 
 

@@ -1,5 +1,5 @@
 '''
-more or less just a container for basic information about a user
+more or less just a container for basic information about a viewer
 we could've used a dict, but i want to keep this open to adding more functionality
 '''
 
