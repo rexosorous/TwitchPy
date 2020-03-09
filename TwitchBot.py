@@ -17,6 +17,7 @@ import requests
 
 import APIHandler
 import Commands
+import Events
 import Websocket
 
 
@@ -29,11 +30,13 @@ the most top level structure
 
 
 class Client:
-    def __init__(self, *, token: str, user: str, channel: str, client_id: str):
+    def __init__(self, *, token: str, user: str, channel: str, client_id: str, events=Events.Events()):
+        self.events = events
         self.commands = set()
         self.API = APIHandler.Kraken(name=channel, cid=client_id)
-        self.IRC = Websocket.IRC(self.API, self.commands, token=token, user=user, channel=channel)
+        self.IRC = Websocket.IRC(self.API, self.commands, self.events, token=token, user=user, channel=channel)
         self.listen_loop = None
+        self.events.on_ready()
 
 
 
@@ -50,11 +53,20 @@ class Client:
         '''
         sets up async event loops to listen to twitch chat
         '''
-        self.listen_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.listen_loop)
+        try:
+            self.events.on_run()
+            self.listen_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.listen_loop)
 
-        self.listen_loop.run_until_complete(self.IRC.connect())
-        self.listen_loop.run_until_complete(self.IRC.listen())
+            self.listen_loop.run_until_complete(self.IRC.connect())
+            self.listen_loop.run_until_complete(self.IRC.listen())
+        except KeyboardInterrupt:
+            self.events.on_expected_death()
+        except:
+            self.events.on_unexpected_death()
+        finally:
+            self.events.on_death()
+            self.listen_loop.close()
 
 
 

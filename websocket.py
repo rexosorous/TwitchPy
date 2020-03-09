@@ -14,12 +14,13 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 
 class IRC:
-    def __init__(self, API, commands, token: str, user: str, channel: str):
+    def __init__(self, API, commands, events, token: str, user: str, channel: str):
         self.reader = None
         self.writer = None
 
         self.API = API              # API connection
         self.commands = commands    # command handler
+        self.events = events        # event handler
         self.token = token          # oauth token. MUST start with 'oauth:'
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
@@ -87,6 +88,7 @@ class IRC:
             elif 'PRIVMSG' in msg:
                 chat = ChatInfo.Chat(self.API, self.writer, self.channel)
                 await chat.parse(msg)
+                self.events.on_msg(chat)
 
                 error_code = 1
                 # cog.choose_command will return 0 if it found a command to execute
@@ -97,8 +99,11 @@ class IRC:
                 for cog in self.commands:
                         error_code *= await cog.choose_command(chat)
 
-                if error_code == 1:    # code 0 is good, code 1 is bad
-                    raise CommandNotFound
+                # code 0 is normal, code 1 is failure to find command
+                if error_code == 0:
+                    self.events.on_cmd(chat)
+                elif error_code == 1:
+                    self.events.on_bad_cmd(chat)
                 # log
 
             # TEMP
