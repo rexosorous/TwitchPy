@@ -12,8 +12,16 @@ class TestBot(Commands.Cog):
 
 
     @Commands.create(name='ping')
-    async def ping(self, chat):
-        await self.bot.IRC.send('pong')
+    async def func1(self, chat):
+        await self.bot.IRC.send('in func1')
+
+    @Commands.create(name='ping', argcount=2)
+    async def func2(self, chat):
+        await self.bot.IRC.send('in func2')
+
+    @Commands.create(name='ping', argcount=3)
+    async def func3(self, chat):
+        await self.bot.IRC.send('in func3')
 
 
 class EvenTestierBot(Commands.Cog):

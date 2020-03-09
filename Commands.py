@@ -40,9 +40,9 @@ class Cog:
         for _, obj in members:
             if isinstance(obj, Command):
                 obj.instance = self
-                self.all_commands[obj.name] = obj
+                self.all_commands[(obj.name, obj.argcount)] = obj
                 for alias in obj.aliases:
-                    self.all_commands[alias] = obj
+                    self.all_commands[(alias, obj.argcount)] = obj
 
 
 
@@ -50,10 +50,11 @@ class Cog:
         '''
         determines which command to execute, if any
         '''
-        if not chat.full_msg.startswith(self.prefix):  # first determine if the bot is even being called
+        if not chat.full_msg.startswith(self.prefix):   # first determine if the bot is even being called
             return 1
 
-        msg = chat.full_msg[len(self.prefix):]         # remove the prefix from the message
+        msg = chat.full_msg[len(self.prefix):]          # remove the prefix from the message
+        placeholder_command = None                      # used for instances with argcount
 
         # determine which command to execute
         # we do it this way instead of
@@ -63,15 +64,24 @@ class Cog:
         # if we have two commands: 'test' and 'test2'
         # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
         # so we check if '!test' has a space after it or if there's nothing after to avoid it
-        for command in self.all_commands:
+        for command, argcount in self.all_commands:
             if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
                 chat.msg = msg[len(command)+1:]
-                chat.split_msg = chat.msg.split(' ')
+                chat.split_msg = msg[len(command)+1:].split(' ')
 
-                if command.argcount == -1 or command.argcount == len(chat.split_msg): # check if the chat message has the correct amount of arguments
-                    inst = self.all_commands[command].instance
-                    await self.all_commands[command].func(inst, chat)
+                if argcount == -1:
+                    # if there are two funcs with the same name and one has argcount defined, but the other doesn't,
+                    # the bot should prioritize the one that has a matching argcount before the one that doesn't define it
+                    placeholder_command = self.all_commands[(command, argcount)]
+
+                elif argcount == len(chat.split_msg): # check if the chat message has the correct amount of arguments
+                    obj = self.all_commands[(command, argcount)]
+                    await obj.func(obj.instance, chat)
                     return 0   # code 0 is normal function
+
+        if placeholder_command: # execute the command without argcount defined if we found one
+            await placeholder_command.func(placeholder_command.instance, chat)
+            return 0
 
         # if we've reached this point, then there exists no command
         # that the user is trying to call
@@ -111,15 +121,50 @@ def create(name: str='', aliases: [str]=[], argcount: int=-1):
     kwarg argcount (optional):  how many arguments the command should expect
                                 if specified, bot will not execute the command if the argcounts don't match
                                     ex: @commands.create(name='test', argcount=2)
-                                            def myfunc(self, chat):
+                                            async def myfunc(self, chat):
                                                 print('hello world')
 
-                                        >> test lorem ipsum     <--- this is the only chat message that will execute myfunc
-                                        << hello world
-                                        >> test
-                                        >> test lorem
-                                        >> test lorem ipsum dolor
+                                        >> !test lorem ipsum     <--- this is the only chat message that will execute myfunc
+                                        << 'hello world'
+                                        >> !test
+                                        >> !test lorem
+                                        >> !test lorem ipsum dolor
                                 if not specified, bot will execute the command regardless of how many args there are
+                                NOTE:   two commands can have the same name but different argcounts
+
+                                    ex: @commands.create(name='test', argcount=1)
+                                        async def func1(self, chat):
+                                            print('in func1')
+
+                                        @commands.create(name='test', argcount=2)
+                                        async def func2(self, chat):
+                                            print('in func2')
+
+                                        >> !test lorem
+                                        << 'in func1'
+                                        >> !test lorem ipsum
+                                        << 'in func2'
+
+                                NOTE:   if one command does not specify argcount, but the other does,
+                                        the bot will prioritize the one with the exact argcount match if possible
+
+                                    ex: @commands.create(name='test')
+                                        async def func1(self, chat):
+                                            print('in func1')
+
+                                        @commands.create(name='test', argcount=2)
+                                        async def func2(self, chat):
+                                            print('in func2')
+
+                                        >> !test
+                                        << 'in func1'
+                                        >> !test lorem
+                                        << 'in func1'
+                                        >> !test lorem ipsum
+                                        << 'in func2'
+                                        >> !test lorem ipsum dolor
+                                        << 'in func1'
+
     '''
     def decorator(func):
         cmd_name = name or func.__name__
