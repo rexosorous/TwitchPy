@@ -1,5 +1,6 @@
 import asyncio
 
+# TwitchPy modules
 import ChatInfo
 from errors import *
 
@@ -15,13 +16,21 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 class IRC:
     def __init__(self, API, commands, events, token: str, user: str, channel: str):
+        '''
+        arg     API         (required)  the API connection
+        arg     commands    (required)  a set of commands objects
+        arg     events      (required)  the event handler
+        arg     token       (required)  the bot's oauth token
+        arg     user        (required)  the bot's username
+        arg     channel     (required)  the channel the bot tries to connect to
+        '''
         self.reader = None
         self.writer = None
 
         self.API = API              # API connection
         self.commands = commands    # command handler
         self.events = events        # event handler
-        self.token = token          # oauth token. MUST start with 'oauth:'
+        self.token = token          # oauth token
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
 
@@ -88,7 +97,7 @@ class IRC:
 
                 # if a message has PRIVMSG in it, it's a public message in twitch chat
                 elif 'PRIVMSG' in msg:
-                    chat = ChatInfo.Chat(self.API, self.writer, self.channel)
+                    chat = ChatInfo.Chat(self.API, self.channel)
                     await chat.parse(msg)
                     await self.events.on_msg(chat)
 
@@ -109,8 +118,8 @@ class IRC:
                     # log
         except (KeyboardInterrupt, ExpectedExit) as e:
             await self.events.on_expected_death()
-        except:
-            await self.events.on_unexpected_death()
+        except Exception as err:
+            await self.events.on_unexpected_death(err)
         finally:
             await self.events.on_death()
             await self.disconnect()

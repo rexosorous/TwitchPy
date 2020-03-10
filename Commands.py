@@ -23,7 +23,11 @@ class Cog:
         def __init__(self):
             super().__init__(prefix='prefix')
     '''
-    def __init__(self, prefix: str):
+    def __init__(self, *, prefix: str):
+        '''
+        kwarg   prefix  (required)  the prefix that will let the bot know to try to execute commands
+                                    ex: if the prefix is '!', then the bot will ignore all messages that don't start with '!'
+        '''
         self.prefix = prefix
         self.all_commands = dict()
         self._init_functions()
@@ -115,55 +119,55 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1):
         async def function_name(chat):   <-- REQUIRES chat
 
 
-    kwarg name (optional):      what the user needs to type to execute the command
-                                if not given, will default to the function name
-    kwarg aliases (optional):   any additional name to execute this command
-    kwarg argcount (optional):  how many arguments the command should expect
-                                if specified, bot will not execute the command if the argcounts don't match
-                                    ex: @commands.create(name='test', argcount=2)
-                                            async def myfunc(self, chat):
-                                                print('hello world')
+    kwarg   name        (optional):     what the user needs to type to execute the command
+                                        if not given, will default to the function name
+    kwarg   aliases     (optional):     any additional name to execute this command
+    kwarg   argcount    (optional):     how many arguments the command should expect
+                                        if specified, bot will not execute the command if the argcounts don't match
+                                            ex: @commands.create(name='test', argcount=2)
+                                                    async def myfunc(self, chat):
+                                                        print('hello world')
 
-                                        >> !test lorem ipsum     <--- this is the only chat message that will execute myfunc
-                                        << 'hello world'
-                                        >> !test
-                                        >> !test lorem
-                                        >> !test lorem ipsum dolor
-                                if not specified, bot will execute the command regardless of how many args there are
-                                NOTE:   two commands can have the same name but different argcounts
+                                                >> !test lorem ipsum     <--- this is the only chat message that will execute myfunc
+                                                << 'hello world'
+                                                >> !test
+                                                >> !test lorem
+                                                >> !test lorem ipsum dolor
+                                        if not specified, bot will execute the command regardless of how many args there are
+                                        NOTE:   two commands can have the same name but different argcounts
 
-                                    ex: @commands.create(name='test', argcount=1)
-                                        async def func1(self, chat):
-                                            print('in func1')
+                                            ex: @commands.create(name='test', argcount=1)
+                                                async def func1(self, chat):
+                                                    print('in func1')
 
-                                        @commands.create(name='test', argcount=2)
-                                        async def func2(self, chat):
-                                            print('in func2')
+                                                @commands.create(name='test', argcount=2)
+                                                async def func2(self, chat):
+                                                    print('in func2')
 
-                                        >> !test lorem
-                                        << 'in func1'
-                                        >> !test lorem ipsum
-                                        << 'in func2'
+                                                >> !test lorem
+                                                << 'in func1'
+                                                >> !test lorem ipsum
+                                                << 'in func2'
 
-                                NOTE:   if one command does not specify argcount, but the other does,
-                                        the bot will prioritize the one with the exact argcount match if possible
+                                        NOTE:   if one command does not specify argcount, but the other does,
+                                                the bot will prioritize the one with the exact argcount match if possible
 
-                                    ex: @commands.create(name='test')
-                                        async def func1(self, chat):
-                                            print('in func1')
+                                            ex: @commands.create(name='test')
+                                                async def func1(self, chat):
+                                                    print('in func1')
 
-                                        @commands.create(name='test', argcount=2)
-                                        async def func2(self, chat):
-                                            print('in func2')
+                                                @commands.create(name='test', argcount=2)
+                                                async def func2(self, chat):
+                                                    print('in func2')
 
-                                        >> !test
-                                        << 'in func1'
-                                        >> !test lorem
-                                        << 'in func1'
-                                        >> !test lorem ipsum
-                                        << 'in func2'
-                                        >> !test lorem ipsum dolor
-                                        << 'in func1'
+                                                >> !test
+                                                << 'in func1'
+                                                >> !test lorem
+                                                << 'in func1'
+                                                >> !test lorem ipsum
+                                                << 'in func2'
+                                                >> !test lorem ipsum dolor
+                                                << 'in func1'
 
     '''
     def decorator(func):

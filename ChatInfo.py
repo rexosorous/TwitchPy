@@ -5,15 +5,18 @@ import UserInfo
 '''
 an object created whenever a viewer sends a message
 which contains information regarding the message like
-    the message being sent, who sent it, and whatever else is associated with the message
+the message being sent, who sent it, and whatever else is associated with the message
 '''
 
 
 
 class Chat:
-    def __init__(self, API, writer, channel):
+    def __init__(self, API, channel):
+        '''
+        arg     API     (required)  the API connection so we can tell if the user is a follower
+        arg     channel (required)  the channel the bot is connected to
+        '''
         self.API = API
-        self.writer = writer
         self.channel = channel
         self.tags = dict()
         self.full_msg = ''      # includes bot prefix and command name
@@ -85,12 +88,3 @@ class Chat:
         follower = await self.API.follows_me(user_id)
         badges = self.tags['badges'].split(',')
         return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, isfollower=follower, badges=badges)
-
-
-
-    async def send(self, msg: str):
-        '''
-        formats and sends a message to twitch chat
-        https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
-        '''
-        self.writer.write(f'PRIVMSG #{self.channel} :{msg}\r\n'.encode())

@@ -1,11 +1,12 @@
 '''
 TO DO:
+    * what happens if the user doesn't add a commands cog?
+    * for UserInfo, only fill the follower field when we want it (don't make unnescessary API calls)
+    * make getters and setters instead of accessing variables directly
+    * allow the bot to join and leave channels at will
     * allow for predefined logger
-    * allow for custom stopcode / kill command OR require kill command
-    * figure out how to do on_msg(), on_ready(), on_death(), etc
     * print/log startup information
     * raise exceptions involving invalid login info / bad connection / etc
-    * somehow find out when a user becomes a follower? or maybe make several checks all the time??
     * automatically produce help msg? (require functions to have "description" variable)
 '''
 
@@ -15,6 +16,7 @@ import asyncio
 import json
 import requests
 
+# TwitchPy modules
 import APIHandler
 import Commands
 from errors import *
@@ -31,8 +33,15 @@ the most top level structure
 
 
 class Client:
-    def __init__(self, *, token: str, user: str, channel: str, client_id: str, events=Events.Events()):
-        self.events = events
+    def __init__(self, *, token: str, user: str, channel: str, client_id: str, eventhandler=Events.Events()):
+        '''
+        kwarg   token       (required)  bot's oauth token. note: MUST start with 'oauth:'. ex: 'oauth:123456'
+        kwarg   user        (required)  bot's username
+        kwarg   channel     (required)  the channel the bot connects to
+        kwarg   client_id   (required)  the bot's client id
+        kwarg   events      (optional)  events object that the bot will send event info to
+        '''
+        self.events = eventhandler
         self.commands = set()
         self.API = APIHandler.Kraken(name=channel, cid=client_id)
         self.IRC = Websocket.IRC(self.API, self.commands, self.events, token=token, user=user, channel=channel)
@@ -43,6 +52,9 @@ class Client:
 
 
     def _init_events(self):
+        '''
+        passes API and IRC connections to events to allow the it to send messages to chat, among other things
+        '''
         self.events.API = self.API
         self.events.IRC = self.IRC
 
@@ -94,4 +106,7 @@ class Client:
 
 
     def kill(self):
+        '''
+        gracefully shuts down the bot and it's IRC connections
+        '''
         raise ExpectedExit

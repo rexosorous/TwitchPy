@@ -1,6 +1,7 @@
 '''
 TODO
     * make get_user_info able to take a list of strings
+    * allow get_user_info to also allow user ids via kwargs
     * figure out a more graceful way to obtain broadcaster id
 '''
 
@@ -20,9 +21,13 @@ reference: https://dev.twitch.tv/docs/api/reference
 
 class Kraken:
     def __init__(self, name: str, cid: str):
+        '''
+        arg     name    (required)  the channel that the bot connects to. aka: the broadcaster of channel
+        arg     cid     (required)  bot's client id
+        '''
         self.base_url = 'https://api.twitch.tv/helix'
         self.header = {'Client-ID': cid}
-        self.broadcaster_name = name        # the channel that the bot is connecting to
+        self.broadcaster_name = name
         self.broadcaster_id = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()['data'][0]['id']
 
 

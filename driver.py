@@ -66,7 +66,7 @@ if __name__ == '__main__':
     with open('login_info.json', 'r') as file:
         login_info = json.load(file)
 
-    bot = TwitchBot.Client(**login_info, events=EventHandler())
+    bot = TwitchBot.Client(**login_info, eventhandler=EventHandler())
     bot.add_cog(TestBot(bot))
     bot.add_cog(EvenTestierBot(bot.get_IRC()))
     bot.run()
