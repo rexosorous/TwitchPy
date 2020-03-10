@@ -81,6 +81,17 @@ class Events:
 
 
 
+    async def on_no_cmd(self, chat):
+        '''
+        called whenever a user sends a message in chat that has nothing to do with the bot
+        aka: the user didn't use any of the command prefixes
+
+        arg     chat    (required)  the chat object containing basic info on the message
+        '''
+        pass
+
+
+
     async def on_death(self):
         '''
         called when the bot dies regardless of how it happens

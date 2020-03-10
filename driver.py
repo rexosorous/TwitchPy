@@ -15,7 +15,16 @@ class EventHandler(Events.Events):
     async def on_connect(self):
         await self.IRC.send('bot is live')
 
-    async def on_unexpected_death(self):
+    async def on_cmd(self, chat):
+        await self.IRC.send('command successful')
+
+    async def on_bad_cmd(self, chat):
+        await self.IRC.send('could not find command')
+
+    async def on_no_cmd(self, chat):
+        await self.IRC.send('you didn\'t call the bot, but i\'m here anyway')
+
+    async def on_unexpected_death(self, err):
         await self.IRC.send('bot reached an unknown issue')
 
     async def on_expected_death(self):

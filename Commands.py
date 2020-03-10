@@ -55,7 +55,7 @@ class Cog:
         determines which command to execute, if any
         '''
         if not chat.full_msg.startswith(self.prefix):   # first determine if the bot is even being called
-            return 1
+            return 1  # indicates that the cog isn't called
 
         msg = chat.full_msg[len(self.prefix):]          # remove the prefix from the message
         placeholder_command = None                      # used for instances with argcount
@@ -81,15 +81,15 @@ class Cog:
                 elif argcount == len(chat.split_msg): # check if the chat message has the correct amount of arguments
                     obj = self.all_commands[(command, argcount)]
                     await obj.func(obj.instance, chat)
-                    return 0   # code 0 is normal function
+                    return 0   # indicates successful execution
 
         if placeholder_command: # execute the command without argcount defined if we found one
             await placeholder_command.func(placeholder_command.instance, chat)
-            return 0
+            return 0 # indicates successful execution
 
         # if we've reached this point, then there exists no command
         # that the user is trying to call
-        return 1    # code 1 is bad
+        return 2 # indicates failure to find command to execute
 
 
 

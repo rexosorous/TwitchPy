@@ -7,6 +7,7 @@ TO DO:
     * allow for predefined logger
     * print/log startup information
     * raise exceptions involving invalid login info / bad connection / etc
+    * have events do something by default. maybe loggers tuff?
     * automatically produce help msg? (require functions to have "description" variable)
 '''
 
