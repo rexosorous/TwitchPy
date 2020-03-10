@@ -14,8 +14,7 @@ TO DO:
                 3a. should we allow the user to state whether or not they want that functionality?
                 ethical note: if someone uses the bot to join someone else's twitch channel, then should
                     should the broadcaster be able to use commands (like kill) regardless?
-    * raise exceptions involving invalid login info / bad connection / etc
-    * have events do something by default. maybe loggers tuff?
+    * have events do something by default. maybe logger stuff?
     * automatically produce help msg? (require functions to have "description" variable)
 '''
 
@@ -52,7 +51,7 @@ class Client:
         '''
         self.events = eventhandler
         self.commands = set()
-        self.API = API.Helix(name=channel, cid=client_id)
+        self.API = API.Helix(channel=channel, cid=client_id)
         self.IRC = Websocket.IRC(self.commands, self.events, token=token, user=user, channel=channel)
         self._listen_loop = None
         self.__init_events()
@@ -100,6 +99,7 @@ class Client:
         having the bot connected to one chat at a time is by design
         '''
         self.API.broadcaster_name = channel
+        self.API._test_connection()
         await self.IRC.connect(channel)
 
 

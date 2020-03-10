@@ -73,7 +73,7 @@ class EvenTestierBot(Commands.Cog):
 
 
 if __name__ == '__main__':
-    with open('login_info.json', 'r') as file:
+    with open('bad_login.json', 'r') as file:
         login_info = json.load(file)
 
     bot = TwitchBot.Client(**login_info, eventhandler=EventHandler())

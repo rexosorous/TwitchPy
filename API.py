@@ -9,6 +9,9 @@ TODO
 
 import requests
 
+# TwitchPy modules
+from errors import *
+
 
 
 '''
@@ -28,7 +31,25 @@ class Helix:
         self.base_url = 'https://api.twitch.tv/helix'
         self.header = {'Client-ID': cid}
         self.broadcaster_name = channel
+        self._test_connection()     # test first to avoid an indexerror due to invalid broadcaster name
         self.broadcaster_id = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()['data'][0]['id']
+
+
+
+    def _test_connection(self):
+        '''
+        used to see if credentials (channel and client id) are valid and working
+        if bad channel/broadcaster name, response will be: {"data":[]}
+        if bad client id, response will be: {"error":"Unauthorized","status":401,"message":"Must provide a valid Client-ID or OAuth token"}
+        '''
+        response = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()
+        if 'status' in response:
+            if response['status'] == 401:
+                raise InvalidClientID
+
+        if not response['data']:
+            raise InvalidChannel
+
 
 
 
@@ -65,8 +86,8 @@ class Helix:
                 ]
         }
         '''
-        response = requests.get(f'{self.base_url}/users?login={username}', headers=self.header)
-        return response.json()['data']
+        response = requests.get(f'{self.base_url}/users?login={username}', headers=self.header).json()
+        return response['data']
 
 
 
@@ -114,5 +135,5 @@ class Helix:
             }
         }
         '''
-        response = requests.get(f'tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters')
-        return response.json()
+        response = requests.get(f'tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters').json()
+        return response

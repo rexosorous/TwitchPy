@@ -53,6 +53,22 @@ class IRC:
         await self.basic_send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership')
         await self.basic_send(f'PASS {self.token}')
         await self.basic_send(f'NICK {self.user}')
+
+        # raise exceptions if we did not successfully connect
+        # also, apparently NICK doesn't matter, we can change it to whatever and twitch will accept it
+        response = (await self.reader.readline()).decode() # we have to 'burn' a readline due to the response from CAP REQ
+        response = (await self.reader.readline()).decode()
+        print(response)
+        if 'NOTICE' in response:
+            if 'Improperly formatted auth' in response:
+                # full twitch response ":tmi.twitch.tv NOTICE * :Improperly formatted auth"
+                raise BadAuthFormat
+            if 'Login authentication failed' in response:
+                # full twitch response ":tmi.twitch.tv NOTICE * :Login authentication failed"
+                raise InvalidAuth
+
+        # no good way to check if we successfully connection to the channel,
+        # but we check if channel is a valid channel name during the API creation
         await self.basic_send(f'JOIN #{self.channel}')
         await self.events.on_connect()
 
