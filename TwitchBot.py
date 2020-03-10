@@ -1,6 +1,5 @@
 '''
 TO DO:
-    * make getters and setters instead of accessing variables directly
     * allow the bot to join and leave channels at will
     * allow for predefined logger
     * print/log startup information
@@ -96,15 +95,17 @@ class Client:
 
 
 
-    def get_IRC(self) -> Websocket.IRC:
+    def kill(self):
         '''
-        returns the websocket connection so the user can do:
-            conn = bot.get_connection()
-            conn.send(msg)
+        gracefully shuts down the bot and it's IRC connections
         '''
-        return self.IRC
+        raise ExpectedExit
 
 
+
+
+
+    ###################### GETTER FUNCTIONS ######################
 
     def get_API(self) -> API.Helix:
         '''
@@ -116,8 +117,10 @@ class Client:
 
 
 
-    def kill(self):
+    def get_IRC(self) -> Websocket.IRC:
         '''
-        gracefully shuts down the bot and it's IRC connections
+        returns the websocket connection so the user can do:
+            conn = bot.get_connection()
+            conn.send(msg)
         '''
-        raise ExpectedExit
+        return self.IRC

@@ -26,3 +26,30 @@ class User:
         self.subscriber = issub
         self.sub_length = sublength
         self.badges = badges
+
+
+
+
+
+        ###################### GETTER FUNCTIONS ######################
+
+        def get_name(self) -> str:
+            return self.name
+
+        def get_id(self) -> str:
+            return self.name
+
+        def is_broadcaster(self) -> bool:
+            return self.broadcaster
+
+        def is_mod(self) -> bool:
+            return self.moderator
+
+        def is_sub(self) -> bool:
+            return self.subscriber
+
+        def get_sub_length(self) -> int:
+            return self.sub_length
+
+        def get_badges(self) -> [str]:
+            return self.badges

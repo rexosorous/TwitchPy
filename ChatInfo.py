@@ -11,7 +11,7 @@ the message being sent, who sent it, and whatever else is associated with the me
 
 
 class Chat:
-    def __init__(self, channel):
+    def __init__(self, channel: str):
         '''
         arg     channel (required)  the channel the bot is connected to
         '''
@@ -84,3 +84,27 @@ class Chat:
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         badges = self.tags['badges'].split(',')
         return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)
+
+
+
+
+
+    ###################### GETTER FUNCTIONS ######################
+
+    def get_channel(self) -> str:
+        return self.channel
+
+    def get_tags(self) -> dict:
+        return self.tags
+
+    def get_full_msg(self) -> str:
+        return self.full_msg
+
+    def get_msg(self) -> str:
+        return self.msg
+
+    def get_split_msg(self) -> [str]:
+        return self.split_msg
+
+    def get_user(self) -> UserInfo.User:
+        return self.user
