@@ -26,6 +26,7 @@ class EventHandler(Events.Events):
 
     async def on_unexpected_death(self, err):
         await self.IRC.send('bot reached an unknown issue')
+        print(err)
 
     async def on_expected_death(self):
         await self.IRC.send('gracefully killing bot...')

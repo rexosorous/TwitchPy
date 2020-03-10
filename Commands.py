@@ -30,11 +30,11 @@ class Cog:
         '''
         self.prefix = prefix
         self.all_commands = dict()
-        self._init_functions()
+        self.__init_functions()
 
 
 
-    def _init_functions(self):
+    def __init_functions(self):
         '''
         populates all_commands
             keys are command names and aliases

@@ -15,9 +15,8 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 
 class IRC:
-    def __init__(self, API, commands, events, token: str, user: str, channel: str):
+    def __init__(self, commands, events, token: str, user: str, channel: str):
         '''
-        arg     API         (required)  the API connection
         arg     commands    (required)  a set of commands objects
         arg     events      (required)  the event handler
         arg     token       (required)  the bot's oauth token
@@ -27,7 +26,6 @@ class IRC:
         self.reader = None
         self.writer = None
 
-        self.API = API              # API connection
         self.commands = commands    # command handler
         self.events = events        # event handler
         self.token = token          # oauth token
@@ -97,8 +95,8 @@ class IRC:
 
                 # if a message has PRIVMSG in it, it's a public message in twitch chat
                 elif 'PRIVMSG' in msg:
-                    chat = ChatInfo.Chat(self.API, self.channel)
-                    await chat.parse(msg)
+                    chat = ChatInfo.Chat(self.channel)
+                    await chat._parse(msg)
                     await self.events.on_msg(chat)
 
                     error_code = 1
@@ -131,7 +129,7 @@ class IRC:
                     elif error_code > 1:
                         await self.events.on_bad_cmd(chat)
                     # log
-        except (KeyboardInterrupt, ExpectedExit) as e:
+        except ExpectedExit as e:
             await self.events.on_expected_death()
         except Exception as err:
             await self.events.on_unexpected_death(err)

@@ -1,11 +1,21 @@
 '''
 TO DO:
-    * what happens if the user doesn't add a commands cog?
-    * for UserInfo, only fill the follower field when we want it (don't make unnescessary API calls)
     * make getters and setters instead of accessing variables directly
     * allow the bot to join and leave channels at will
     * allow for predefined logger
     * print/log startup information
+    * add permissions to commands?
+        so something like       @Commands.create(permission='moderator')
+        would mean that any viewer with UserInfo.User.moderator == True can use it
+        some questions:
+            1. should permission='moderator' assume that anyone higher (like broadcaster) can use it?
+                1a. what would the hierarchy be?
+                1b. should we allow a custom hierarchy?
+            2. should the user have to define each level they want like permission=['broadcaster', 'moderator', 'subscriber']
+            3. should we automatically assume that 'broadcaster' can use any command regardless?
+                3a. should we allow the user to state whether or not they want that functionality?
+                ethical note: if someone uses the bot to join someone else's twitch channel, then should
+                    should the broadcaster be able to use commands (like kill) regardless?
     * raise exceptions involving invalid login info / bad connection / etc
     * have events do something by default. maybe loggers tuff?
     * automatically produce help msg? (require functions to have "description" variable)
@@ -18,7 +28,7 @@ import json
 import requests
 
 # TwitchPy modules
-import APIHandler
+import API
 import Commands
 from errors import *
 import Events
@@ -44,15 +54,15 @@ class Client:
         '''
         self.events = eventhandler
         self.commands = set()
-        self.API = APIHandler.Kraken(name=channel, cid=client_id)
-        self.IRC = Websocket.IRC(self.API, self.commands, self.events, token=token, user=user, channel=channel)
-        self.listen_loop = None
-        self._init_events()
+        self.API = API.Helix(name=channel, cid=client_id)
+        self.IRC = Websocket.IRC(self.commands, self.events, token=token, user=user, channel=channel)
+        self._listen_loop = None
+        self.__init_events()
         self.events.on_ready()
 
 
 
-    def _init_events(self):
+    def __init_events(self):
         '''
         passes API and IRC connections to events to allow the it to send messages to chat, among other things
         '''
@@ -76,13 +86,13 @@ class Client:
         '''
         try:
             self.events.on_run()
-            self.listen_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.listen_loop)
+            self._listen_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._listen_loop)
 
-            self.listen_loop.run_until_complete(self.IRC.connect())
-            self.listen_loop.run_until_complete(self.IRC.listen())
+            self._listen_loop.run_until_complete(self.IRC.connect())
+            self._listen_loop.run_until_complete(self.IRC.listen())
         finally:
-            self.listen_loop.close()
+            self._listen_loop.close()
 
 
 
@@ -96,7 +106,7 @@ class Client:
 
 
 
-    def get_API(self) -> APIHandler.Kraken:
+    def get_API(self) -> API.Helix:
         '''
         returns the APIHandler so the user can do:
             API = bot.get_API()

@@ -19,7 +19,7 @@ reference: https://dev.twitch.tv/docs/api/reference
 
 
 
-class Kraken:
+class Helix:
     def __init__(self, name: str, cid: str):
         '''
         arg     name    (required)  the channel that the bot connects to. aka: the broadcaster of channel

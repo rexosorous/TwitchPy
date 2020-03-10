@@ -11,12 +11,10 @@ the message being sent, who sent it, and whatever else is associated with the me
 
 
 class Chat:
-    def __init__(self, API, channel):
+    def __init__(self, channel):
         '''
-        arg     API     (required)  the API connection so we can tell if the user is a follower
         arg     channel (required)  the channel the bot is connected to
         '''
-        self.API = API
         self.channel = channel
         self.tags = dict()
         self.full_msg = ''      # includes bot prefix and command name
@@ -26,7 +24,7 @@ class Chat:
 
 
 
-    async def parse(self, raw_message: str):
+    async def _parse(self, raw_message: str):
         '''
         parses a raw message from twitch irc client into readable/iterable data structures
         basic form of a raw message: <tags> PRIVMSG #<user> :<msg>
@@ -62,11 +60,11 @@ class Chat:
             val = t[t.find('=')+1:]
             self.tags[key] = val
 
-        self.user = await self.get_user()
+        self.user = await self.__create_user()
 
 
 
-    async def get_user(self) -> UserInfo:
+    async def __create_user(self) -> UserInfo:
         '''
         creates a user object from the viewer who types in chat
         contains basic information about them:
@@ -76,7 +74,6 @@ class Chat:
             if they're a moderator
             if they're a subscriber
             how long they've been subscribed
-            if they're a follower
             their chat badges
         '''
         username = self.tags['display-name']
@@ -85,6 +82,5 @@ class Chat:
         moderator = bool(self.tags['mod'])
         subscriber = bool(self.tags['subscriber'])
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
-        follower = await self.API.follows_me(user_id)
         badges = self.tags['badges'].split(',')
-        return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, isfollower=follower, badges=badges)
+        return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)
