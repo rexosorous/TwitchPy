@@ -34,10 +34,21 @@ class IRC:
 
 
 
-    async def connect(self):
+    async def connect(self, channel: str=''):
         '''
         connects to and sends twitch IRC all the info it needs to connect to chat with appropriate permissions
+
+        arg     channel     (optional)  if provided, will close curren connection (if there is one),
+                                        update self.channel, and connect to the new channel
+
+        NOTE: this means that the bot can only be connected to one channel's chat at a time
         '''
+        if channel:
+            self.channel = channel
+            if self.writer:
+                self.writer.close()
+                await self.writer.wait_closed()
+
         self.reader, self.writer = await asyncio.open_connection('irc.chat.twitch.tv', 6667)
         await self.basic_send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership')
         await self.basic_send(f'PASS {self.token}')

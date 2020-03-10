@@ -20,14 +20,14 @@ reference: https://dev.twitch.tv/docs/api/reference
 
 
 class Helix:
-    def __init__(self, name: str, cid: str):
+    def __init__(self, channel: str, cid: str):
         '''
-        arg     name    (required)  the channel that the bot connects to. aka: the broadcaster of channel
-        arg     cid     (required)  bot's client id
+        arg     channel     (required)  the channel that the bot connects to. aka: the broadcaster of channel
+        arg     cid         (required)  bot's client id
         '''
         self.base_url = 'https://api.twitch.tv/helix'
         self.header = {'Client-ID': cid}
-        self.broadcaster_name = name
+        self.broadcaster_name = channel
         self.broadcaster_id = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()['data'][0]['id']
 
 

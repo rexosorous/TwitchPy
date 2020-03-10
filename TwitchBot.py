@@ -1,6 +1,5 @@
 '''
 TO DO:
-    * allow the bot to join and leave channels at will
     * allow for predefined logger
     * print/log startup information
     * add permissions to commands?
@@ -92,6 +91,16 @@ class Client:
             self._listen_loop.run_until_complete(self.IRC.listen())
         finally:
             self._listen_loop.close()
+
+
+
+    async def change_channel(self, channel: str):
+        '''
+        allows the bot to disconnect from the current chat and connect to another one
+        having the bot connected to one chat at a time is by design
+        '''
+        self.API.broadcaster_name = channel
+        await self.IRC.connect(channel)
 
 
 
