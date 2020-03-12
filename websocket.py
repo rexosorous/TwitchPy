@@ -1,7 +1,9 @@
 import asyncio
+import sys
 
 # TwitchPy modules
 import ChatInfo
+import UserInfo
 from errors import *
 
 
@@ -15,8 +17,9 @@ reference: https://dev.twitch.tv/docs/irc/guide
 
 
 class IRC:
-    def __init__(self, commands, events, token: str, user: str, channel: str):
+    def __init__(self, logger, commands, events, token: str, user: str, channel: str):
         '''
+        arg     logger      (required)  logger
         arg     commands    (required)  a set of commands objects
         arg     events      (required)  the event handler
         arg     token       (required)  the bot's oauth token
@@ -26,11 +29,16 @@ class IRC:
         self.reader = None
         self.writer = None
 
+        self.logger = logger
+        asyncio.run(self.logger.log(11, 'init', 'initializing IRC...'))
+
         self.commands = commands    # command handler
         self.events = events        # event handler
         self.token = token          # oauth token
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
+
+        asyncio.run(self.logger.log(11, 'init', 'successfully initialized IRC'))
 
 
 
@@ -49,6 +57,9 @@ class IRC:
                 self.writer.close()
                 await self.writer.wait_closed()
 
+        await self.logger.log(19, 'basic', f'connecting to channel: {self.channel}...')
+
+        await self.logger.log(11, 'init', f'sending credentials...')
         self.reader, self.writer = await asyncio.open_connection('irc.chat.twitch.tv', 6667)
         await self.basic_send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership')
         await self.basic_send(f'PASS {self.token}')
@@ -58,18 +69,25 @@ class IRC:
         # also, apparently NICK doesn't matter, we can change it to whatever and twitch will accept it
         response = (await self.reader.readline()).decode() # we have to 'burn' a readline due to the response from CAP REQ
         response = (await self.reader.readline()).decode()
-        print(response)
+
         if 'NOTICE' in response:
+            await self.logger.log(40, 'error', response)
             if 'Improperly formatted auth' in response:
                 # full twitch response ":tmi.twitch.tv NOTICE * :Improperly formatted auth"
+                await self.logger.log(40, 'error', 'improperly formatted auth token. did you forget to put "oauth:" at the start of the token?')
                 raise BadAuthFormat
             if 'Login authentication failed' in response:
                 # full twitch response ":tmi.twitch.tv NOTICE * :Login authentication failed"
+                await self.logger.log(40, 'error', 'invalid auth token')
                 raise InvalidAuth
+
+        await self.logger.log(11, 'init', f'credentials accepted')
 
         # no good way to check if we successfully connection to the channel,
         # but we check if channel is a valid channel name during the API creation
         await self.basic_send(f'JOIN #{self.channel}')
+
+        await self.logger.log(19, 'basic', f'successfully connected to channel: {self.channel}')
         await self.events.on_connect()
 
 
@@ -79,6 +97,7 @@ class IRC:
         sends a message to the twitch irc at it's most basic level
         NOTE won't send anything to twitch chat, for that use send()
         '''
+        await self.logger.log(9, 'send', f'SEND: "{msg}"')
         self.writer.write(f'{msg}\r\n'.encode())
         await self.writer.drain()
 
@@ -89,6 +108,11 @@ class IRC:
         formats and sends a message to twitch chat
         https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
         '''
+        chat = ChatInfo.Chat(self.channel)
+        chat.msg = msg
+        chat.user = UserInfo.User(self.user, '', False, False, False, False, [])
+        await self.logger.log(21, 'outgoing', chat)
+        await self.logger.log(9, 'send', f'SEND: "PRIVMSG #{self.channel} :{msg}"')
         self.writer.write(f'PRIVMSG #{self.channel} :{msg}\r\n'.encode())
 
 
@@ -97,6 +121,7 @@ class IRC:
         '''
         disconnects from twitch IRC
         '''
+        await self.logger.log(19, 'basic', f'disconnecting from {self.channel}')
         self.writer.close()
         await self.writer.wait_closed()
 
@@ -107,12 +132,11 @@ class IRC:
         gets chat messages as they come in.
         ONLY gets messages in chat. shouldn't get things like subscription or follows or bit messages
         '''
+        await self.logger.log(20, 'basic', 'bot is now listening...')
         try:
             while True:
-                # msg = self.irc.recv(2048).decode('utf-8')
-                msg = await self.reader.readline()
-                msg = msg.decode()
-
+                msg = (await self.reader.readline()).decode()
+                await self.logger.log(9, 'recv', msg)
 
                 # tells twitch that we want our connection to stay alive
                 # twitch will occasionally send 'PING :tmi.twitch.tv' and expects 'PONG :tmi.twitch.tv' back to keep the connection alive
@@ -124,6 +148,7 @@ class IRC:
                 elif 'PRIVMSG' in msg:
                     chat = ChatInfo.Chat(self.channel)
                     await chat._parse(msg)
+                    await self.logger.log(21, 'incoming', chat)
                     await self.events.on_msg(chat)
 
                     error_code = 1
@@ -154,12 +179,15 @@ class IRC:
                     elif error_code == 1:
                         await self.events.on_no_cmd(chat)
                     elif error_code > 1:
+                        await self.logger.log(30, 'error', 'unable to find command')
                         await self.events.on_bad_cmd(chat)
                     # log
         except ExpectedExit as e:
             await self.events.on_expected_death()
         except Exception as err:
-            await self.events.on_unexpected_death(err)
+            exc_info = sys.exc_info()
+            await self.logger.log(40, 'error', 'bot received an unknown error', exc_info)
+            await self.events.on_unexpected_death(err, exc_info)
         finally:
             await self.events.on_death()
             await self.disconnect()

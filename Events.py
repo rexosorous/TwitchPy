@@ -1,3 +1,7 @@
+import asyncio
+
+
+
 '''
 holds all the events the bot will call
 allows the user to "catch" these events by creating a child of this class like:
@@ -19,8 +23,25 @@ as defined below.
 
 class Events:
     def __init__(self):
+        self.logger = None
         self.API = None
         self.IRC = None
+
+
+
+    def _init_events(self, logger, API, IRC):
+        '''
+        receiver logger, API, and IRC to allow the Events to log things and interact with chat
+        must be done here and not in __init__ because events will be initialiated before
+        logger, API, or IRC are created.
+        '''
+        self.logger = logger
+        asyncio.run(self.logger.log(11, 'init', 'initializing Events...'))
+
+        self.API = API
+        self.IRC = IRC
+
+        asyncio.run(self.logger.log(11, 'init', 'successfully initialized Events'))
 
 
 
@@ -111,12 +132,27 @@ class Events:
 
 
 
-    async def on_unexpected_death(self, err):
+    async def on_unexpected_death(self, err, exc_info):
         '''
         called when the bot dies unexpectedly. aka: when an error occurs
         executes before on_death
         executes before connections are closed, allowing for the bot to send messages to chat
 
         arg     err     (required)  the error that caused the unexpected death
+        arg     exc_info(required)  exception info from sys.exc_info()
+        '''
+        pass
+
+
+
+    async def on_log(self, log_type: str, record):
+        '''
+        called whenever the bot attempts to log something.
+        this is called even when the user sets up a logger
+        this is called even if the user has a filter
+
+        arg     log_type    (required)  the type of log it was. like init or msg. see Logger
+        arg     record      (required)  record info used for logging's logger
+                                        see https://docs.python.org/3/library/logging.html#logrecord-objects
         '''
         pass

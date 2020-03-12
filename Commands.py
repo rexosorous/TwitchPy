@@ -54,10 +54,10 @@ class Cog:
         '''
         determines which command to execute, if any
         '''
-        if not chat.full_msg.startswith(self.prefix):   # first determine if the bot is even being called
+        if not chat.msg.startswith(self.prefix):   # first determine if the bot is even being called
             return 1  # indicates that the cog isn't called
 
-        msg = chat.full_msg[len(self.prefix):]          # remove the prefix from the message
+        msg = chat.msg[len(self.prefix):]          # remove the prefix from the message
         placeholder_command = None                      # used for instances with argcount
 
         # determine which command to execute
@@ -70,15 +70,15 @@ class Cog:
         # so we check if '!test' has a space after it or if there's nothing after to avoid it
         for command, argcount in self.all_commands:
             if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
-                chat.msg = msg[len(command)+1:]
-                chat.split_msg = msg[len(command)+1:].split(' ')
+                chat.args = msg[len(command)+1:]
+                chat.split_args = msg[len(command)+1:].split(' ')
 
                 if argcount == -1:
                     # if there are two funcs with the same name and one has argcount defined, but the other doesn't,
                     # the bot should prioritize the one that has a matching argcount before the one that doesn't define it
                     placeholder_command = self.all_commands[(command, argcount)]
 
-                elif argcount == len(chat.split_msg): # check if the chat message has the correct amount of arguments
+                elif argcount == len(chat.split_args): # check if the chat message has the correct amount of arguments
                     obj = self.all_commands[(command, argcount)]
                     await obj.func(obj.instance, chat)
                     return 0   # indicates successful execution

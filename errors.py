@@ -37,3 +37,12 @@ class InvalidAuth(Exception):
     does not accept the oauth token
     '''
     pass
+
+
+
+class InvalidLogger(Exception):
+    '''
+    raised when the user tries to set a logger with an object
+    not created from the logging module
+    '''
+    pass

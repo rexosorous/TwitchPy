@@ -7,6 +7,7 @@ TODO
 
 
 
+import asyncio
 import requests
 
 # TwitchPy modules
@@ -23,16 +24,21 @@ reference: https://dev.twitch.tv/docs/api/reference
 
 
 class Helix:
-    def __init__(self, channel: str, cid: str):
+    def __init__(self, logger, channel: str, cid: str):
         '''
         arg     channel     (required)  the channel that the bot connects to. aka: the broadcaster of channel
         arg     cid         (required)  bot's client id
         '''
+        self.logger = logger
+        asyncio.run(self.logger.log(11, 'init', 'initializing API...'))
+
         self.base_url = 'https://api.twitch.tv/helix'
         self.header = {'Client-ID': cid}
         self.broadcaster_name = channel
         self._test_connection()     # test first to avoid an indexerror due to invalid broadcaster name
         self.broadcaster_id = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()['data'][0]['id']
+
+        asyncio.run(self.logger.log(11, 'init', 'successfully intialized API'))
 
 
 
@@ -42,13 +48,21 @@ class Helix:
         if bad channel/broadcaster name, response will be: {"data":[]}
         if bad client id, response will be: {"error":"Unauthorized","status":401,"message":"Must provide a valid Client-ID or OAuth token"}
         '''
+        asyncio.run(self.logger.log(11, 'init', 'testing API credentials...'))
+
         response = requests.get(f'{self.base_url}/users?login={self.broadcaster_name}', headers=self.header).json()
         if 'status' in response:
             if response['status'] == 401:
+                asyncio.run(self.logger.log(40, 'error', f'{response}'))
+                asyncio.run(self.logger.log(40, 'error', 'test failed! invalid client ID'))
                 raise InvalidClientID
 
         if not response['data']:
+            asyncio.run(self.logger.log(40, 'error', f'{response}'))
+            asyncio.run(self.logger.log(40, 'error', 'test failed! channel does not exist'))
             raise InvalidChannel
+
+        asyncio.run(self.logger.log(11, 'init', 'API credentials are good'))
 
 
 
@@ -60,7 +74,9 @@ class Helix:
         here mainly for posterity and has almost no real use
         does no attempt to parse the text at all
         '''
+        await self.logger.log(9, 'request_get', f'GET: {self.base_url}/{endpoint}')
         response = requests.get(f'{self.base_url}/{endpoint}', headers=self.header)
+        await self.logger.log(9, 'request_response', f'response: {response.text}')
         return response.text
 
 
@@ -86,7 +102,10 @@ class Helix:
                 ]
         }
         '''
+        await self.logger.log(19, 'basic', f'getting info on user: {username}')
+        await self.logger.log(9, 'request_get', f'GET {self.base_url}/users?login={username}')
         response = requests.get(f'{self.base_url}/users?login={username}', headers=self.header).json()
+        await self.logger.log(9, 'request_response', f'response: {response}')
         return response['data']
 
 
@@ -96,12 +115,18 @@ class Helix:
         gets all viewers who follow the broadcaster by the broadcaster id (cannot use username)
         returns a dict whose keys are the usernames and whose values are the user's id
         '''
+        await self.logger.log(19, 'basic', 'getting followers')
+        await self.logger.log(9, 'request_get', f'GET {self.base_url}/users/follows?to_id={self.broadcaster_id}&first=100')
         followers = dict()
         response  = requests.get(f'{self.base_url}/users/follows?to_id={self.broadcaster_id}&first=100', headers=self.header).json()
+        await self.logger.log(9, 'request_response', f'response: {response}')
+
         while response['data']:
             for user in response['data']:
                 followers[user['from_name']] = user['from_id']
+            await self.logger.log(9, 'request_get', f'GET {self.base_url}/users/follows?to_id={self.broadcaster_id}&first=100&after={response["pagination"]["cursor"]}')
             response = requests.get(f'{self.base_url}/users/follows?to_id={self.broadcaster_id}&first=100&after={response["pagination"]["cursor"]}', headers=self.header).json()
+            await self.logger.log(9, 'request_response', f'response: {response}')
         return followers
 
 
@@ -111,7 +136,10 @@ class Helix:
         checks to see if a viewer is following the broadcaster by user id (cannot use username)
         returns a bool value
         '''
+        await self.logger.log(19, 'basic', f'determing if {user_id} is a follower')
+        await self.logger.log(9, 'request_get', f'GET {self.base_url}/users/follows?to_id={self.broadcaster_id}&from_id={user_id}')
         response = requests.get(f'{self.base_url}/users/follows?to_id={self.broadcaster_id}&from_id={user_id}', headers=self.header).json()
+        await self.logger.log(9, 'request_response', f'response: {response}')
         return bool(response['total'])
 
 
@@ -135,5 +163,8 @@ class Helix:
             }
         }
         '''
+        await self.logger.log(19, 'basic', 'getting viewers')
+        await self.logger.log(9, 'request_get', f'GET tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters')
         response = requests.get(f'tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters').json()
+        await self.logger.log(9, 'request_response', f'response: {response}')
         return response

@@ -1,3 +1,10 @@
+'''
+TODO:
+    * maybe add a time_sent variable?
+'''
+
+
+
 import UserInfo
 
 
@@ -17,9 +24,10 @@ class Chat:
         '''
         self.channel = channel
         self.tags = dict()
-        self.full_msg = ''      # includes bot prefix and command name
-        self.msg = ''           # includes the message without prefix or command name
-        self.split_msg = []     # msg split by spaces
+        self.raw_message = ''   # the raw message received from twitch
+        self.msg = ''      # includes bot prefix and command name
+        self.full_args = ''     # command args. aka: the message without prefix or command name
+        self.split_args = []    # full_args split by spaces to better access them
         self.user = None
 
 
@@ -48,12 +56,13 @@ class Chat:
             PRIVMSG #gay_zach :lorem ipsum
         https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
         '''
+        self.raw_message = raw_message
         msg = raw_message
         tags = msg[1:msg.find('PRIVMSG ')].split(';')
         msg = msg[msg.find('PRIVMSG ')+9:]
         username = msg[:msg.find(':')-1]
         msg = msg[msg.find(':')+1:-2]
-        self.full_msg = msg
+        self.msg = msg
 
         for t in tags:
             key = t[:t.find('=')]
@@ -97,14 +106,14 @@ class Chat:
     def get_tags(self) -> dict:
         return self.tags
 
-    def get_full_msg(self) -> str:
-        return self.full_msg
-
     def get_msg(self) -> str:
         return self.msg
 
-    def get_split_msg(self) -> [str]:
-        return self.split_msg
+    def get_full_args(self) -> str:
+        return self.full_args
+
+    def get_split_args(self) -> [str]:
+        return self.split_args
 
     def get_user(self) -> UserInfo.User:
         return self.user
