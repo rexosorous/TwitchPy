@@ -3,6 +3,7 @@ import TwitchBot
 import Commands
 import Events
 import Logger
+import asyncio
 
 
 
@@ -40,6 +41,16 @@ class EvenTestierBot(Commands.Cog):
 
 
 
+class MyLoop:
+    def __init__(self, irc):
+        self.irc = irc
+
+    async def badprinter(self):
+        while True:
+            await asyncio.sleep(2)
+            await self.irc.send('wowzers')
+
+
 
 
 if __name__ == '__main__':
@@ -49,4 +60,5 @@ if __name__ == '__main__':
     bot = TwitchBot.Client(**login_info)
     bot.add_cog(TestBot(bot))
     bot.add_cog(EvenTestierBot(bot.get_IRC()))
-    bot.run()
+    gg = MyLoop(bot.get_IRC())
+    bot.run([gg.badprinter])

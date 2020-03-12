@@ -1,10 +1,3 @@
-'''
-TODO:
-    * maybe add a time_sent variable?
-'''
-
-
-
 # TwitchPy modules
 import UserInfo
 

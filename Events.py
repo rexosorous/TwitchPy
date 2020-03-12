@@ -6,7 +6,7 @@ import asyncio
 '''
 holds all the events the bot will call
 allows the user to "catch" these events by creating a child of this class like:
-    class UserClass(Events.Events):
+    class UserClass(Events.Handler):
         def __init__(self):
             super().__init__()
 
@@ -22,7 +22,7 @@ as defined below.
 
 
 
-class Events:
+class Handler:
     def __init__(self):
         self.logger = None
         self.API = None

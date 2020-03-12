@@ -1,3 +1,10 @@
+'''
+TO DO:
+    * make JOIN it's own function and split it up from connect
+'''
+
+
+
 # python standard modules
 import asyncio
 import sys
@@ -141,6 +148,7 @@ class IRC:
         await self.logger.log(20, 'basic', 'bot is now listening...')
         try:
             while True:
+                await asyncio.sleep(0)  # this allows tasks to run concurrently
                 msg = (await self.reader.readline()).decode()
                 await self.logger.log(9, 'recv', msg)
 
@@ -187,7 +195,6 @@ class IRC:
                     elif error_code > 1:
                         await self.logger.log(30, 'error', 'unable to find command')
                         await self.events.on_bad_cmd(chat)
-                    # log
         except ExpectedExit as e:
             await self.events.on_expected_death()
         except Exception as err:

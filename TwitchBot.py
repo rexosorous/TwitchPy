@@ -13,8 +13,6 @@ TO DO:
                 3a. should we allow the user to state whether or not they want that functionality?
                 ethical note: if someone uses the bot to join someone else's twitch channel, then should
                     should the broadcaster be able to use commands (like kill) regardless?
-    * have events do something by default. maybe logger stuff?
-    * automatically produce help msg? (require functions to have "description" variable)
 '''
 
 
@@ -41,7 +39,7 @@ the most top level structure
 
 
 class Client:
-    def __init__(self, *, token: str, user: str, channel: str, client_id: str, logger=Logger.Logger(preset='default'), eventhandler=Events.Events()):
+    def __init__(self, *, token: str, user: str, channel: str, client_id: str, logger=Logger.Logger(preset='default'), eventhandler=Events.Handler()):
         '''
         kwarg   token       (required)  bot's oauth token. note: MUST start with 'oauth:'. ex: 'oauth:123456'
         kwarg   user        (required)  bot's username
@@ -63,6 +61,7 @@ class Client:
         self.API = API.Helix(logger=self.logger, channel=channel, cid=client_id)
         self.IRC = Websocket.IRC(logger=self.logger, commands=self.command_cogs, events=self.events, token=token, user=user, channel=channel)
         self.events._init_events(logger=self.logger, API=self.API, IRC=self.IRC)
+        self.tasks = []     # for asyncio concurrency
         self._listen_loop = None
 
         # log
@@ -83,9 +82,20 @@ class Client:
 
 
 
-    def run(self):
+    def run(self, funcs: []):
         '''
         sets up async event loops to listen to twitch chat
+
+        arg     funcs   (required)  a list of functions the user may want to run concurrently with Websocket.IRC.listen()
+                                    usually with some kind of infinite or long-running loop
+                                    these functions MUST abide by the following...
+                                        * be an async function
+                                        * asyncio.sleep(#)
+                                        * must NOT take any arguments
+                                        * must be part of a list (even if there's only one function)
+                                        * must be passed without calling it
+                                            ex: GOOD bot.run([myfunc])
+                                                BAD  bot.run([myfunc()])
         '''
         try:
             asyncio.run(self.logger.log(20, 'basic', 'starting bot...'))
@@ -94,10 +104,23 @@ class Client:
             asyncio.set_event_loop(self._listen_loop)
 
             self._listen_loop.run_until_complete(self.IRC.connect())
-            self._listen_loop.run_until_complete(self.IRC.listen())
+            self._listen_loop.run_until_complete(self.start(funcs))
         finally:
             asyncio.run(self.logger.log(20, 'basic', 'bot is shutting down...'))
             self._listen_loop.close()
+
+
+
+    async def start(self, funcs: []):
+        '''
+        starts all tasks we wish to run concurrently
+        https://docs.python.org/3/library/asyncio-task.html#running-tasks-concurrently
+        see self.run() for info on funcs args
+        '''
+        self.tasks.append(asyncio.create_task(self.IRC.listen()))
+        for func in funcs:
+            self.tasks.append(asyncio.create_task(func()))
+        await asyncio.gather(*self.tasks)
 
 
 
