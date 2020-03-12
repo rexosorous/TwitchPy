@@ -1,5 +1,6 @@
 '''
 TO DO:
+    * should Commands have access to logger?
     * re-organize __init__ methods
     * add permissions to commands?
         so something like       @Commands.create(permission='moderator')
