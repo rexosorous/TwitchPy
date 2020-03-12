@@ -1,5 +1,6 @@
 '''
 TODO
+    * convert to use urllib.request to stop dependency on requests module
     * make get_user_info able to take a list of strings
     * allow get_user_info to also allow user ids via kwargs
     * figure out a more graceful way to obtain broadcaster id
@@ -7,7 +8,10 @@ TODO
 
 
 
+# python standard modules
 import asyncio
+
+# dependent modules
 import requests
 
 # TwitchPy modules

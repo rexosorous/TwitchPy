@@ -1,10 +1,11 @@
+# python standard modules
 import asyncio
 import sys
 
 # TwitchPy modules
 import ChatInfo
-import UserInfo
 from errors import *
+import UserInfo
 
 
 

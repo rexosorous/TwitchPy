@@ -1,6 +1,5 @@
 '''
 TO DO:
-    * add comments for dependent modules and python default modules
     * re-organize __init__ methods
     * add permissions to commands?
         so something like       @Commands.create(permission='moderator')
@@ -20,9 +19,9 @@ TO DO:
 
 
 
+# python standard module
 import asyncio
 import json
-import requests
 
 # TwitchPy modules
 import API

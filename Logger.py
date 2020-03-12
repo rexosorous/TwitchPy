@@ -11,10 +11,12 @@ TO DO:
 
 
 
+# python standard modules
 import inspect
 import logging
 from sys import stdout
 
+# TwitchPy Modules
 from errors import *
 import ChatInfo
 
