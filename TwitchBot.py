@@ -1,7 +1,6 @@
 '''
 TO DO:
     * should Commands have access to logger?
-    * re-organize __init__ methods
     * add permissions to commands?
         so something like       @Commands.create(permission='moderator')
         would mean that any viewer with UserInfo.User.moderator == True can use it
@@ -51,17 +50,22 @@ class Client:
         kwarg   logger      (optional)  logger object. if not specified, will default to one.
         kwarg   events      (optional)  events object that the bot will send event info to
         '''
+        # variables given
         self.events = eventhandler
         self.logger = logger
+
+        # logger setup
         self.logger.set_eventhandler(self.events)
         asyncio.run(self.logger.log(11, 'init', 'initializing all components...'))
 
-        self.commands = set()
+        # variables created
+        self.command_cogs = set()
         self.API = API.Helix(logger=self.logger, channel=channel, cid=client_id)
-        self.IRC = Websocket.IRC(logger=self.logger, commands=self.commands, events=self.events, token=token, user=user, channel=channel)
-        self._listen_loop = None
+        self.IRC = Websocket.IRC(logger=self.logger, commands=self.command_cogs, events=self.events, token=token, user=user, channel=channel)
         self.events._init_events(logger=self.logger, API=self.API, IRC=self.IRC)
+        self._listen_loop = None
 
+        # log
         asyncio.run(self.logger.log(11, 'init', 'successfully initialized all components'))
         asyncio.run(self.logger.log(20, 'init', 'bot is ready to run'))
         self.events.on_ready()
@@ -74,7 +78,7 @@ class Client:
         this basically just adds commands to the parts of the bot that needs access to them
         '''
         asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
-        self.commands.add(cog)
+        self.command_cogs.add(cog)
         asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
 
 

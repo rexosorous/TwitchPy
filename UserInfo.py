@@ -19,6 +19,7 @@ class User:
         note: can't keep track of follower status because that requires an API call and isn't part of the chat message
         i could have User hold an instance of API or something similar, but it seems like overkill for one thing.
         '''
+        # variables given
         self.name = name
         self.id = uid
         self.broadcaster = isbroadcaster

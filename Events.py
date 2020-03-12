@@ -36,12 +36,15 @@ class Events:
         must be done here and not in __init__ because events will be initialiated before
         logger, API, or IRC are created.
         '''
+        # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing Events...'))
 
+        # given variables
         self.API = API
         self.IRC = IRC
 
+        # log
         asyncio.run(self.logger.log(11, 'init', 'successfully initialized Events'))
 
 

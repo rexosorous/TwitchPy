@@ -27,18 +27,23 @@ class IRC:
         arg     user        (required)  the bot's username
         arg     channel     (required)  the channel the bot tries to connect to
         '''
-        self.reader = None
-        self.writer = None
-
+        # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing IRC...'))
 
+        # variables given
         self.commands = commands    # command handler
         self.events = events        # event handler
         self.token = token          # oauth token
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
 
+        # variables created
+        # these will be set during self.connect()
+        self.reader = None
+        self.writer = None
+
+        # log
         asyncio.run(self.logger.log(11, 'init', 'successfully initialized IRC'))
 
 

@@ -30,15 +30,22 @@ class Helix:
         arg     channel     (required)  the channel that the bot connects to. aka: the broadcaster of channel
         arg     cid         (required)  bot's client id
         '''
+        # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing API...'))
 
-        self.base_url = 'https://api.twitch.tv/helix'
+        # variables given
         self.header = {'Client-ID': cid}
         self.broadcaster_name = channel
-        asyncio.run(self._test_connection())    # test first to avoid an indexerror due to invalid broadcaster name
+
+        # variables made
+        self.base_url = 'https://api.twitch.tv/helix'
         self.broadcaster_id = None
 
+        # additional setup
+        asyncio.run(self._test_connection())    # test first to avoid an indexerror due to invalid broadcaster name
+
+        # log
         asyncio.run(self.logger.log(11, 'init', 'successfully intialized API'))
 
 

@@ -29,8 +29,13 @@ class Cog:
         kwarg   prefix  (required)  the prefix that will let the bot know to try to execute commands
                                     ex: if the prefix is '!', then the bot will ignore all messages that don't start with '!'
         '''
+        # variables given
         self.prefix = prefix
+
+        # variables created
         self.all_commands = dict()
+
+        # additional setup
         self.__init_functions()
 
 

@@ -23,7 +23,10 @@ class Chat:
         '''
         arg     channel (required)  the channel the bot is connected to
         '''
+        # variables given
         self.channel = channel
+
+        # variables created
         self.tags = dict()
         self.raw_message = ''   # the raw message received from twitch
         self.msg = ''      # includes bot prefix and command name

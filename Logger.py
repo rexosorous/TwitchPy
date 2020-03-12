@@ -88,13 +88,16 @@ class Logger:
                                                 mybot = TwitchPy.Client(logger=mylogger, eventhandler=myeventhandler)
                                             but this is not necessary. see set_eventhandler() below
         '''
+        # variables given
         self.chatfmt = chatfmt
         self.events = eventhandler
 
+        # variables created
         self.console = None
         self.file = None
         self.filter = dict()
 
+        # additional setup
         self._choose_preset(preset)
 
 
