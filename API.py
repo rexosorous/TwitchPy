@@ -1,11 +1,3 @@
-'''
-TODO
-    * make get_user_info able to take a list of strings
-    * allow get_user_info to also allow user ids via kwargs
-'''
-
-
-
 # python standard modules
 import asyncio
 import json
@@ -96,9 +88,14 @@ class Helix:
 
 
 
-    async def get_user_info(self, username: str) -> dict:
+    async def get_user_info(self, user: [str]) -> list:
         '''
-        gets viewer info based on their username, not user id
+        gets viewer info based on either their username or id
+
+        arg     user    (required)  a list of strings of viewers to get info on
+                                    can either be their username or their user id or a mixture of both
+                                    note: must be a list of strings even if you're only looking up by id or even if you're only looking up one viewer
+
         expected response (not output):
         {
             'data':
@@ -117,8 +114,14 @@ class Helix:
                 ]
         }
         '''
-        await self.logger.log(19, 'basic', f'getting info on user: {username}')
-        response = await self.get_endpoint(f'/users?login={username}')
+        await self.logger.log(19, 'basic', f'getting info on user(s): {user}')
+        endpoint = ''
+        for u in user:
+            if u.isdigit():
+                endpoint += f'&id={u}'
+            else:
+                endpoint += f'&login={u}'
+        response = await self.get_endpoint(f'/users?login={endpoint}')
         return response['data']
 
 
