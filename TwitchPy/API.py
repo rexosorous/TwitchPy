@@ -4,7 +4,7 @@ import json
 from urllib import request
 
 # TwitchPy modules
-from errors import *
+from .errors import *
 
 
 

@@ -10,9 +10,9 @@ import asyncio
 import sys
 
 # TwitchPy modules
-import ChatInfo
-from errors import *
-import UserInfo
+from .ChatInfo import Chat
+from .errors import *
+from .UserInfo import User
 
 
 
@@ -121,9 +121,9 @@ class IRC:
         formats and sends a message to twitch chat
         https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
         '''
-        chat = ChatInfo.Chat(self.channel)
+        chat = Chat(self.channel)
         chat.msg = msg
-        chat.user = UserInfo.User(self.user, '', False, False, False, False, [])
+        chat.user = User(self.user, '', False, False, False, False, [])
         await self.logger.log(21, 'outgoing', chat)
         await self.logger.log(9, 'send', f'SEND: "PRIVMSG #{self.channel} :{msg}"')
         self.writer.write(f'PRIVMSG #{self.channel} :{msg}\r\n'.encode())
@@ -160,7 +160,7 @@ class IRC:
 
                 # if a message has PRIVMSG in it, it's a public message in twitch chat
                 elif 'PRIVMSG' in msg:
-                    chat = ChatInfo.Chat(self.channel)
+                    chat = Chat(self.channel)
                     await chat._parse(msg)
                     await self.logger.log(21, 'incoming', chat)
                     await self.events.on_msg(chat)
@@ -195,12 +195,5 @@ class IRC:
                     elif error_code > 1:
                         await self.logger.log(30, 'error', 'unable to find command')
                         await self.events.on_bad_cmd(chat)
-        except ExpectedExit as e:
-            await self.events.on_expected_death()
-        except Exception as err:
-            exc_info = sys.exc_info()
-            await self.logger.log(40, 'error', 'bot received an unknown error', exc_info)
-            await self.events.on_unexpected_death(err, exc_info)
         finally:
-            await self.events.on_death()
             await self.disconnect()

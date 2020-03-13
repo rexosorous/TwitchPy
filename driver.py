@@ -1,10 +1,6 @@
+from TwitchPy import TwitchBot, Commands
 import json
-import TwitchBot
-import Commands
-import Events
-import Logger
 import asyncio
-
 
 
 class TestBot(Commands.Cog):

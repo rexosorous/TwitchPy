@@ -1,5 +1,5 @@
 # TwitchPy modules
-import UserInfo
+from .UserInfo import User
 
 
 
@@ -70,7 +70,7 @@ class Chat:
 
 
 
-    async def __create_user(self) -> UserInfo:
+    async def __create_user(self) -> User:
         '''
         creates a user object from the viewer who types in chat
         contains basic information about them:
@@ -89,7 +89,7 @@ class Chat:
         subscriber = bool(self.tags['subscriber'])
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         badges = self.tags['badges'].split(',')
-        return UserInfo.User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)
+        return User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)
 
 
 
@@ -112,5 +112,5 @@ class Chat:
     def get_split_args(self) -> [str]:
         return self.split_args
 
-    def get_user(self) -> UserInfo.User:
+    def get_user(self) -> User:
         return self.user

@@ -17,8 +17,8 @@ import logging
 from sys import stdout
 
 # TwitchPy Modules
-from errors import *
-import ChatInfo
+from .errors import *
+from .ChatInfo import Chat
 
 
 
@@ -250,7 +250,7 @@ class Logger:
         frame = frame[1]
 
 
-        if isinstance(msg, ChatInfo.Chat): # check if this is a string or a twitch chat message
+        if isinstance(msg, Chat): # check if this is a string or a twitch chat message
             '''
             we get dicts for the chat object which is exactly what we need to use for string formatting
             see https://realpython.com/python-string-formatting/#1-old-style-string-formatting-operator
