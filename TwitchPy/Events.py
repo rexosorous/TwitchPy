@@ -68,7 +68,7 @@ class Handler:
 
     async def on_connect(self):
         '''
-        called right after the bot connects to twitch chat
+        called right after the bot connects to a twitch channel
         '''
         pass
 

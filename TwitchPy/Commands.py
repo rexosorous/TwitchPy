@@ -78,15 +78,16 @@ class Cog:
         msg = chat.msg[len(self.prefix):]          # remove the prefix from the message
         placeholder_command = None                      # used for instances with argcount
 
-        # determine which command to execute
-        # we do it this way instead of
-        #   if command in self.all_commands
-        # because we want to allow users to have commands with spaces in it
-        # we need to check for a space after the 'command' or if there's nothing after the 'command'
-        # if we have two commands: 'test' and 'test2'
-        # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
-        # so we check if '!test' has a space after it or if there's nothing after to avoid it
+
         for command, argcount in self.all_commands:
+            # determine which command to execute
+            # we do it this way instead of
+            #   if command in self.all_commands
+            # because we want to allow users to have commands with spaces in it
+            # we need to check for a space after the 'command' or if there's nothing after the 'command'
+            # if we have two commands: 'test' and 'test2'
+            # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
+            # so we check if '!test' has a space after it or if there's nothing after to avoid it
             if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
                 chat.args = msg[len(command)+1:]
                 chat.split_args = msg[len(command)+1:].split(' ')
@@ -118,7 +119,7 @@ class Cog:
     def _check_permissions(self, user, command):
         '''
         makes sure the viewer has the correct permissions to execute this command.
-        checks both permission level and whitelist (by calling _check_whitelist)
+        checks both permission level and whitelist (by calling self._check_whitelist())
 
         arg     user        (required)  the whole UserInfo.User object. this is most likely sent in as chat.user
         arg     command     (required)  the whole command object. most likely sent in as obj

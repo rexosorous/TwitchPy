@@ -1,21 +1,7 @@
 '''
 TO DO:
-    * add permissions to commands?
-        so something like       @Commands.create(permission='moderator', whitelist='user')
-        would mean that any viewer with UserInfo.User.moderator == True can use it
-        OR any viewer with UserInfo.User.name == 'user' can use it
-        some questions:
-            1. should permission='moderator' assume that anyone higher (like broadcaster) can use it?
-                1a. what would the hierarchy be?
-                1b. should we allow a custom hierarchy?
-            2. should the user have to define each level they want like permission=['broadcaster', 'moderator', 'subscriber']
-            3. should we automatically assume that 'broadcaster' can use any command regardless?
-                3a. should we allow the user to state whether or not they want that functionality?
-                ethical note: if someone uses the bot to join someone else's twitch channel, then should
-                    should the broadcaster be able to use commands (like kill) regardless?
     * give API auth token so it can do things that require it (ie. mod commands).
         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
-    * fix readme for capitalizations and figure out which python version i need (not 3.8+ yet) i think it's 3.7+
 '''
 
 
@@ -107,6 +93,7 @@ class Client:
             asyncio.set_event_loop(self._listen_loop)
 
             self._listen_loop.run_until_complete(self.IRC.connect())
+            print('\nhere\n')
             self._listen_loop.run_until_complete(self.start(funcs))
         except ExpectedExit as e:
             self._listen_loop.run_until_complete(self.events.on_expected_death())
@@ -142,7 +129,7 @@ class Client:
         await self.logger.log(19, 'basic', f'changing channels to {channel}')
         self.API.broadcaster_name = channel
         self.API._test_connection()
-        await self.IRC.connect(channel)
+        await self.IRC._join(channel)
 
 
 

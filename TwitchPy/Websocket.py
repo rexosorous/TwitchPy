@@ -1,10 +1,3 @@
-'''
-TO DO:
-    * make JOIN it's own function and split it up from connect
-'''
-
-
-
 # python standard modules
 import asyncio
 import sys
@@ -55,23 +48,10 @@ class IRC:
 
 
 
-    async def connect(self, channel: str=''):
+    async def connect(self):
         '''
         connects to and sends twitch IRC all the info it needs to connect to chat with appropriate permissions
-
-        arg     channel     (optional)  if provided, will close curren connection (if there is one),
-                                        update self.channel, and connect to the new channel
-
-        NOTE: this means that the bot can only be connected to one channel's chat at a time
         '''
-        if channel:
-            self.channel = channel
-            if self.writer:
-                self.writer.close()
-                await self.writer.wait_closed()
-
-        await self.logger.log(19, 'basic', f'connecting to channel: {self.channel}...')
-
         await self.logger.log(11, 'init', f'sending credentials...')
         self.reader, self.writer = await asyncio.open_connection('irc.chat.twitch.tv', 6667)
         await self.basic_send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership')
@@ -95,11 +75,23 @@ class IRC:
                 raise InvalidAuth
 
         await self.logger.log(11, 'init', f'credentials accepted')
+        await self._join(self.channel)
 
-        # no good way to check if we successfully connection to the channel,
-        # but we check if channel is a valid channel name during the API creation
+
+
+    async def _join(self, channel: str):
+        '''
+        joins a twitch channel's chat
+        note: the user should not be using this. the user should use TwitchBot.Client.change_channel() function
+              because we also need to update information in API.Helix
+        note: there's no good way to check if we successfully connection to the channel,
+              but we check if channel is a valid channel name when we update API.Helix
+
+        arg     channel     (required)  the channel to connect to
+        '''
+        await self.logger.log(19, 'basic', f'connecting to channel: {self.channel}...')
+        self.channel = channel
         await self.basic_send(f'JOIN #{self.channel}')
-
         await self.logger.log(19, 'basic', f'successfully connected to channel: {self.channel}')
         await self.events.on_connect()
 
@@ -108,7 +100,7 @@ class IRC:
     async def basic_send(self, msg: str):
         '''
         sends a message to the twitch irc at it's most basic level
-        NOTE won't send anything to twitch chat, for that use send()
+        NOTE won't send anything to twitch chat, for that use self.send()
         '''
         await self.logger.log(9, 'send', f'SEND: "{msg}"')
         self.writer.write(f'{msg}\r\n'.encode())
@@ -167,16 +159,16 @@ class IRC:
 
                     error_code = 1
 
-                    # cog.choose_command will return 0 if it found a command to execute
+                    # Commands.Cog.choose_command() will return 0 if it found a command to execute
                     # so between multiple cogs, if any of them executed a command,
                     # then error_code will become 0, indicating normal function
 
-                    # cog.choose_command will return 1 if the message doesn't start with
+                    # Commands.Cog.choose_command() will return 1 if the message doesn't start with
                     # the appropriate prefix. aka: the message is unrelated to the cog's commands
                     # so ONLY if all cogs return 1, then the error_code will remain 1,
                     # indiciating that the chat message has nothing to do with the bot
 
-                    # cog.choose_command will return 2 if it didn't find a command to execute
+                    # Commands.Cog.choose_command() will return 2 if it didn't find a command to execute
                     # so assuming that no cog executes a command (which returns 0), then regardless
                     # of if certain cogs are ignored (which returns 1), or if all cogs fail to find
                     # a command (which returns 2), then error_code > 1, indicating that the a viewer
