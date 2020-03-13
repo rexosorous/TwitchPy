@@ -22,7 +22,7 @@ class Chat:
         # variables created
         self.tags = dict()
         self.raw_message = ''   # the raw message received from twitch
-        self.msg = ''      # includes bot prefix and command name
+        self.msg = ''           # includes bot prefix and command name
         self.full_args = ''     # command args. aka: the message without prefix or command name
         self.split_args = []    # full_args split by spaces to better access them
         self.user = None
@@ -85,8 +85,8 @@ class Chat:
         username = self.tags['display-name']
         user_id = self.tags['user-id']
         broadcaster = 'broadcaster' in self.tags['badges']
-        moderator = bool(self.tags['mod'])
-        subscriber = bool(self.tags['subscriber'])
+        moderator = bool(int(self.tags['mod']))
+        subscriber = bool(int(self.tags['subscriber']))
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         badges = self.tags['badges'].split(',')
         return User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)

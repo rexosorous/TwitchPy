@@ -1,8 +1,9 @@
 '''
 TO DO:
     * add permissions to commands?
-        so something like       @Commands.create(permission='moderator')
+        so something like       @Commands.create(permission='moderator', whitelist='user')
         would mean that any viewer with UserInfo.User.moderator == True can use it
+        OR any viewer with UserInfo.User.name == 'user' can use it
         some questions:
             1. should permission='moderator' assume that anyone higher (like broadcaster) can use it?
                 1a. what would the hierarchy be?
@@ -12,6 +13,9 @@ TO DO:
                 3a. should we allow the user to state whether or not they want that functionality?
                 ethical note: if someone uses the bot to join someone else's twitch channel, then should
                     should the broadcaster be able to use commands (like kill) regardless?
+    * give API auth token so it can do things that require it (ie. mod commands).
+        * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
+    * fix readme for capitalizations and figure out which python version i need (not 3.8+ yet) i think it's 3.7+
 '''
 
 
@@ -19,6 +23,7 @@ TO DO:
 # python standard module
 import asyncio
 import json
+import sys
 
 # TwitchPy modules
 from .API import Helix
@@ -80,7 +85,7 @@ class Client:
 
 
 
-    def run(self, funcs: []):
+    def run(self, funcs: list=[]):
         '''
         sets up async event loops to listen to twitch chat
 
