@@ -3,9 +3,6 @@ TO DO:
     * be smart enough to make choose_command() cleaner. especially with those return statements
     * maybe give commands access to events and logger? this would mean i don't have to return
       those numbers and can have more detailed logs and events
-    * maybe give commands access to irc and api? just to make it easier for the user to do
-      things in their commands?
-    * sort commands by their args, to get rid of placeholder_command
 '''
 
 
@@ -46,6 +43,7 @@ class Cog:
 
         # variables created
         self.all_commands = dict()
+        self.command_keys = list()
 
         # additional setup
         self.__init_functions()
@@ -66,6 +64,18 @@ class Cog:
                 for alias in obj.aliases:
                     self.all_commands[(alias, obj.argcount)] = obj
 
+        self.command_keys = sorted(self.all_commands, key=lambda x: x[1], reverse=True)
+            # sort commands by argcount to make selecting one easier
+            # because they sorted in reverse, self.choose_command will
+            # prioritize the one with more args
+            # this is mainly to prefer commands with argcount defined
+            # over commands without argcount defined
+            # ex: command(name='mycommand', argcount=2)
+            #       should be prioritized over
+            #     command(name='mycommand')
+            # note: these are only keys because you can't sort the whole dictionary
+            #       so make sure to traverse the keys, not the dict
+
 
 
     async def choose_command(self, chat):
@@ -76,39 +86,27 @@ class Cog:
             return 1  # indicates that the cog isn't called
 
         msg = chat.msg[len(self.prefix):]          # remove the prefix from the message
-        placeholder_command = None                      # used for instances with argcount
 
-
-        for command, argcount in self.all_commands:
+        for command, argcount in self.command_keys:
             # determine which command to execute
             # we do it this way instead of
             #   if command in self.all_commands
             # because we want to allow users to have commands with spaces in it
-            # we need to check for a space after the 'command' or if there's nothing after the 'command'
-            # if we have two commands: 'test' and 'test2'
-            # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
-            # so we check if '!test' has a space after it or if there's nothing after to avoid it
             if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
+                # we need to check for a space after the 'command' or if there's nothing after the 'command'
+                # if we have two commands: 'test' and 'test2'
+                # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
+                # so we check if '!test' has a space after it or if there's nothing after to avoid it
                 chat.args = msg[len(command)+1:]
                 chat.split_args = msg[len(command)+1:].split(' ')
 
-                if argcount == -1:
-                    # if there are two funcs with the same name and one has argcount defined, but the other doesn't,
-                    # the bot should prioritize the one that has a matching argcount before the one that doesn't define it
-                    placeholder_command = self.all_commands[(command, argcount)]
-
-                elif argcount == len(chat.split_args): # check if the chat message has the correct amount of arguments
+                if argcount == len(chat.split_args) or argcount == -1: # check if the chat message has the correct amount of arguments
                     obj = self.all_commands[(command, argcount)]
 
                     # check if the viewer is allowed to use this command
                     if self._check_permissions(chat.user, obj):
                         await obj.func(obj.instance, chat)
                         return 0   # indicates successful execution
-
-        if placeholder_command: # execute the command without argcount defined if we found one
-            if self._check_permissions(chat.user, placeholder_command):
-                await placeholder_command.func(placeholder_command.instance, chat)
-                return 0 # indicates successful execution
 
         # if we've reached this point, then there exists no command
         # that the user is trying to call
@@ -205,6 +203,8 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str
                                             >> !test lorem
                                             >> !test lorem ipsum dolor
                                     if not specified, bot will execute the command regardless of how many args there are
+                                    note: we default to -1 instead of 0 because we want the user to be able to specify
+                                          that they want exactly 0 args. so -1 will mean any amount of args
                                     NOTE:   two commands can have the same name but different argcounts
 
                                         ex: @commands.create(name='test', argcount=1)

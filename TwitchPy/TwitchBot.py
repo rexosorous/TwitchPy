@@ -93,7 +93,6 @@ class Client:
             asyncio.set_event_loop(self._listen_loop)
 
             self._listen_loop.run_until_complete(self.IRC.connect())
-            print('\nhere\n')
             self._listen_loop.run_until_complete(self.start(funcs))
         except ExpectedExit as e:
             self._listen_loop.run_until_complete(self.events.on_expected_death())
