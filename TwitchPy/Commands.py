@@ -1,9 +1,8 @@
-'''
-TO DO:
-    * be smart enough to make choose_command() cleaner. especially with those return statements
-    * maybe give commands access to events and logger? this would mean i don't have to return
-      those numbers and can have more detailed logs and events
-'''
+# TO DO:
+#   * be smart enough to make choose_command() cleaner. especially with those return statements
+#   * maybe give commands access to events and logger? this would mean i don't have to return
+#     those numbers and can have more detailed logs and events
+#   * allow sub length and badges for command permissions
 
 
 
@@ -12,32 +11,75 @@ import inspect
 
 
 
-'''
-all command related functionalities
-uses a cog system so that users can create multiple classes (cogs)
-each with their own functions to add commands to the bot
-NOTE: two cogs can have commands with the same name and both will execute
-NOTE: cogs can have different prefixes
-'''
-
-
-
 class Cog:
-    '''
-    handles command interataction including
-        * storing commands
-        * choosing which command to execute
+    """A structure to hold commands defined by you.
 
-    in order to create functions, user must do the following:
-    class MyClass(Commands.Handler):
-        def __init__(self):
-            super().__init__(prefix='prefix')
-    '''
+    Cogs hold commands you created using the decorator @Commands.create()
+    (see Commands.create() for more details on what this is and how to use it),
+    and determines which commands to execute based on permissions and arguments.
+
+
+    Keyword Arguments
+    ------------------
+    prefix : str
+        The prefix for these commands so the bot knows that the following message is meant for it.
+        For example, most bots use '!' as their prefix.
+
+
+    Attributes
+    -----------
+    prefix : str
+        See keyword arguments.
+
+    all_commands : dict
+        A dictionary containing all of your commands whose keys are ('commandname', argcount) and
+        whose values are the Commands.Command objects. What's argcount? see Commands.create() for more info.
+
+    command_keys : list
+        A list whose elements are the tuples that are used by all_commands and is sorted by
+        argcount in reverse order.
+
+
+    Note
+    -----------
+    For the most part, you won't need to use these attributes in any meaningful way because TwitchPy
+    should do all the work of selecting the command for you. But they're here if you do want to use
+    them for something.
+
+    Note
+    -----------
+    You should **not** be creating an instance of Commands.Cog, instead you should be creating your
+    own classes that inherit this class. Make sure to call super().__init__()
+
+
+    Examples
+    -----------
+    >>> from TwitchPy import TwitchBot, Commands
+    >>>
+    >>> class MyClass(Commands.Cog):
+    >>>     def __init__(self, IRC):
+    >>>         super().__init__(prefix='%')
+    >>>         self.IRC = IRC
+    >>>
+    >>>     @Commands.create(name='ping')
+    >>>     async def mycommand():
+    >>>         self.IRC.send('pong')
+    >>>
+    >>> mybot = TwitchBot.Client(yourBotLoginInfoHere)
+    >>> mycog = MyClass(mybot.get_IRC())
+    >>> mybot.add_cog(mycog)
+    >>> mybot.run()
+
+    This will create a bot with prefix '%' and one command named 'ping' that sends 'pong' in chat.
+
+    >>> %ping
+    pong
+    """
     def __init__(self, *, prefix: str):
-        '''
+        """
         kwarg   prefix  (required)  the prefix that will let the bot know to try to execute commands
                                     ex: if the prefix is '!', then the bot will ignore all messages that don't start with '!'
-        '''
+        """
         # variables given
         self.prefix = prefix
 
@@ -51,11 +93,11 @@ class Cog:
 
 
     def __init_functions(self):
-        '''
+        """
         populates all_commands
             keys are command names and aliases
             values are command objects
-        '''
+        """
         members = inspect.getmembers(self)
         for _, obj in members:
             if isinstance(obj, Command):
@@ -78,10 +120,10 @@ class Cog:
 
 
 
-    async def choose_command(self, chat):
-        '''
+    async def _choose_command(self, chat):
+        """
         determines which command to execute, if any
-        '''
+        """
         if not chat.msg.startswith(self.prefix):   # first determine if the bot is even being called
             return 1  # indicates that the cog isn't called
 
@@ -115,13 +157,13 @@ class Cog:
 
 
     def _check_permissions(self, user, command):
-        '''
+        """
         makes sure the viewer has the correct permissions to execute this command.
         checks both permission level and whitelist (by calling self._check_whitelist())
 
         arg     user        (required)  the whole UserInfo.User object. this is most likely sent in as chat.user
         arg     command     (required)  the whole command object. most likely sent in as obj
-        '''
+        """
         if command.permission == 'notset':
             # i know this seems counterintuitive, but that's only because we're going to check this AND _check_whitelist
             # so if a user defines a command like command(whitelist='someviewer'), then the permission is going to default
@@ -146,12 +188,12 @@ class Cog:
 
 
     def _check_whitelist(self, username, whitelist):
-        '''
+        """
         makes sure the user is either in the whitelist or the whitelist doesn't exist
 
         arg     username    (required)  only the UserInfo.User.name portion. most likely sent in as user.name
         arg     whitelist   (required)  whitelist portion of command. most likely sent in as command.whitelist
-        '''
+        """
         if not whitelist: # if there is no whitelist, don't sweat it
             return True
         if username in whitelist:
@@ -164,9 +206,48 @@ class Cog:
 
 
 class Command:
-    '''
-    more or less just a struct to contain basic info on the command
-    '''
+    """Just a struct to contain basic info on the command created.
+
+    One of these is instantiated for every command created using the decorator Commands.create()
+
+
+    Parameters
+    -------------
+    func : function
+        The function that the command will execute when it's called.
+
+    name : str
+        The name of the command.
+
+    aliases : [str]
+        Any other names that the command can be executed by.
+
+    argcount : int
+        How many arguments this command expects to receive.
+
+    permission : {'notest', 'everyone', 'subscriber', 'moderator', 'broadcaster'}
+        Who is allowed to use this command based on their affiliation with the channel.
+
+    whitelist : [str]
+        Who is allowed to use this command based on username. If used alongside permission,
+        permissions will take precedence over whitelist.
+
+
+    Note
+    ------------
+    For more information on what these mean, see Commands.create()
+
+
+    Attributes
+    --------------
+    See parameters
+
+
+    Note
+    ---------
+    You shouldn't have to make an instance of this class. But it might be useful for you to know
+    what attributes this Class has if you plan on making your own command parser.
+    """
     def __init__(self, func, name: str, aliases: [str], argcount: int, permission: str, whitelist: [str]):
         self.func = func
         self.name = name
@@ -181,77 +262,104 @@ class Command:
 
 
 def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str='notset', whitelist: [str]=[]):
-    '''
-    a decorator function to create new commands
-    must use the following syntax:
-        @Commands.create(kwargs):
-        async def function_name(chat):   <-- REQUIRES chat
+    """A decorator function used to create new commands.
+
+    Requirements for creating your own command:
+
+    1. MUST be used in a class that inherits from Commands.Cog
+
+    2. MUST use the @ decorator syntax: @Commands.create()
+
+    3. MUST be an async function
+
+    4. MUST take one parameter: chat
 
 
-    kwarg   name        (optional)  what the user needs to type to execute the command
-                                    if not given, will default to the function name
-    kwarg   aliases     (optional)  any additional name to execute this command
-    kwarg   argcount    (optional)  how many arguments the command should expect
-                                    if specified, bot will not execute the command if the argcounts don't match
-                                        ex: @commands.create(name='test', argcount=2)
-                                                async def myfunc(self, chat):
-                                                    print('hello world')
+    Keyword Arguments
+    -------------------
+    name : str (optional)
+        The name of the command. AKA: what the viewer will type after the prefix to execute the command.
+        If not given, the command name will be the name of the function.
 
-                                            >> !test lorem ipsum     <--- this is the only chat message that will execute myfunc
-                                            << 'hello world'
-                                            >> !test
-                                            >> !test lorem
-                                            >> !test lorem ipsum dolor
-                                    if not specified, bot will execute the command regardless of how many args there are
-                                    note: we default to -1 instead of 0 because we want the user to be able to specify
-                                          that they want exactly 0 args. so -1 will mean any amount of args
-                                    NOTE:   two commands can have the same name but different argcounts
+    aliases : [str] (optional)
+        Any other names you want the command to be executed by.
 
-                                        ex: @commands.create(name='test', argcount=1)
-                                            async def func1(self, chat):
-                                                print('in func1')
+    argcount: int (optional)
+        How many arguments this command should expect. If not given, the command will execute regardless
+        of how many arguments are given.
 
-                                            @commands.create(name='test', argcount=2)
-                                            async def func2(self, chat):
-                                                print('in func2')
+    permission : {'notset', 'everyone', 'subscriber', 'moderator', 'broadcaster'} (optional)
+        Based on their affiliation to the channel, which users are allowed to use this command.
+        Specifying any permission level implies that users with higher permission levels will be able to use the command.
+        For example, permission='moderator' implies that both channel moderators and broadcasters can use it.
 
-                                            >> !test lorem
-                                            << 'in func1'
-                                            >> !test lorem ipsum
-                                            << 'in func2'
+    whitelist : [str] (optional)
+        Which viewers can use this command by name. If specified along with permission, permission will take
+        precedence over whitelist.
 
-                                    NOTE:   if one command does not specify argcount, but the other does,
-                                            the bot will prioritize the one with the exact argcount match if possible
 
-                                        ex: @commands.create(name='test')
-                                            async def func1(self, chat):
-                                                print('in func1')
+    Examples
+    -----------
+    For all of these examples, assume they're part of a class defined as such:
 
-                                            @commands.create(name='test', argcount=2)
-                                            async def func2(self, chat):
-                                                print('in func2')
+    >>> from TwitchPy import Commands
+    >>> class MyClass(Commands.Cog):
+    >>>     def __init__(self, IRC):
+    >>>         super().__init__(syntax='!'')
+    >>>         self.IRC = IRC  # received from TwitchBot.Client().get_IRC()
 
-                                            >> !test
-                                            << 'in func1'
-                                            >> !test lorem
-                                            << 'in func1'
-                                            >> !test lorem ipsum
-                                            << 'in func2'
-                                            >> !test lorem ipsum dolor
-                                            << 'in func1'
+    >>> @Command.create()
+    >>> async def ping(self, chat):
+    >>>     self.IRC.send('pong')
 
-    kwarg   permission  (optional)  based on their 'loyalty' to the channel, which viewers can use this command
-                                    can be 'broadcaster', 'moderator', 'subscriber', or 'everyone'
-                                    a permission level implies that any viewer with a higher level can also use the command
-                                        ex: permission='moderator' implies that both broadcasters and moderators can use it, but not subscribers or everyone
-                                    note: does not support followers. see UserInfo.User.__init__() comments for more info on why.
+    The simplest example of how to create a command. This well execute whenever a viewer types in chat
+    '!ping' and the bot will respond with 'pong' in chat. Because name is not defined, the command name
+    defaults to the function name: 'ping'. Because argcount is not defined, this command will execute
+    no matter how many arguments are sent. So '!ping lorem ipsum' will still work. And because permission
+    and whitelist are not defined, there's no restrictions on who can use this command.
 
-    kwarg   whitelist   (optional)  which viewers (defined by username) can use this command
-                                    if defined, no other viewers can use this
-                                    not mutually exclusive with permission. permissions take precedence over whitelist.
-                                        ex: assume permission='moderator', whitelist='someviewer'
-                                            this means that broadcasters, moderators, and anyone names 'someviewer' can use this command
-    '''
+    >>> @Command.create(name='hello', aliases=['hi', 'howdy'])
+    >>> async def sayhello(self, chat):
+    >>>     self.IRC.send('HeyGuys')
+
+    This command says in chat 'HeyGuys' whenever a viewer says '!hello' or '!hi' or '!howdy'. Because
+    name is defined, the command name won't be set to the function name: sayhello. Because aliases is
+    defined with two strings, this command can be executed using any of the 3 names.
+
+    >>> @Command.create(name='hello', argcount=2)
+    >>> async def advancedhello(self, chat):
+    >>>     self.IRC.send('VoHiYo')
+
+    This command says in chat 'VoHiYo' whenever a viewer says '!hello' followed by two other words (argcount)
+    So '!hello lorem ipsum' or '!hello my guys' or '!hello a b' would all work because there are two
+    words (argcount) after the command. Note that we now have two commands with the name '!hello'.
+    This is allowed because they work on two different argcounts. The function advancedhello is called
+    only if there are two args and the function sayhello will get called whenever there's any other number
+    of args. That is to say, if there are multiple functions with the same name, the bot will prioritize
+    executing commands with argcount defined over ones without argcount defined.
+
+    NOTE: If you have two commands with the same name and argcount, only one of them will execute.
+
+    >>> @Command.create(permisison='moderator')
+    >>> async def permissionhello(self, chat):
+    >>>     self.IRC.send('hello mod or broadcaster')
+
+    This command will only execute if a moderator or a broadcaster says '!mod'.
+
+    >>> @Command.create(whitelist=['someviewer'])
+    >>> async def whitelisthello(self, chat):
+    >>>     self.IRC.send('hello someviewer')
+
+    This command will only execute if the viewer who sent the message is named 'someviewer'
+
+    >>> @Command.create(permission='moderator', whitelist=['someviewer'])
+    >>> async def reallyspecifichello(self, chat):
+    >>>     self.IRC.send('hello mod, broadcaster, or someviewer')
+
+    This command will execute if **any** moderator or broadcaster sends the message as specified by
+    permission. Additionally, if any viewer named 'someviewer', regardless of if they're are a mod
+    or a broadcaster or not, will also be able to execute the command.
+    """
     def decorator(func):
         cmd_name = name or func.__name__
         cmd = Command(func, name=cmd_name, aliases=aliases, argcount=argcount, permission=permission, whitelist=whitelist)

@@ -8,20 +8,29 @@ from .errors import *
 
 
 
-'''
-handles any twitch API calls
-used to get basic information about things like viewers, followers, user info, etc.
-reference: https://dev.twitch.tv/docs/api/reference
-'''
-
-
-
 class Helix:
+    """Handles calls to Twitch's New API: Helix
+
+    Reference: https://dev.twitch.tv/docs/api/reference
+
+
+    Parameters
+    --------------
+    logger : Logger
+        Logger to log things as they happen. Useful for debugging.
+
+    channel : str
+        The name of the channel that the bot connects to.
+
+    cid : str
+        The bot's client ID.
+
+
+    Note
+    -------------
+    You should't have to make an instance of this class.
+    """
     def __init__(self, logger, channel: str, cid: str):
-        '''
-        arg     channel     (required)  the channel that the bot connects to. aka: the broadcaster of channel
-        arg     cid         (required)  bot's client id
-        '''
         # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing API...'))
@@ -43,11 +52,14 @@ class Helix:
 
 
     async def _test_connection(self):
-        '''
-        used to see if credentials (channel and client id) are valid and working
-        if bad channel/broadcaster name, response will be: {"data":[]}
-        if bad client id, response will be: {"error":"Unauthorized","status":401,"message":"Must provide a valid Client-ID or OAuth token"}
-        '''
+        """Used to see if credentials (channel and client ID) are valid and working.
+
+
+        Note
+        ----------
+        If the channel is invalid, the response will be: {"data":[]}
+        If the client ID is invalid, the response will be: {"error":"Unauthorized","status":401,"message":"Must provide a valid Client-ID or OAuth token"}
+        """
         await self.logger.log(11, 'init', 'testing API credentials...')
 
         response = await self.get_endpoint(f'/users?login={self.broadcaster_name}')
@@ -69,17 +81,32 @@ class Helix:
 
 
     async def get_endpoint(self, endpoint: str) -> dict:
-        '''
-        the most basic use of the API handler
-        lets you get any endpoint in the API translated to a dict via json
-        note: automatically takes care of the headers for you
+        """Lets you get any endpoint in the API.
 
-        arg     endpoint    (required)  MUST ONLY be the part after 'twitch.tv/helix'
-                                        AND MUST start with '/'
-                                        ex: GOOD /users?login=someuser
-                                            BAD  https:api.twitch.tv/helix/users?login=someuser
-                                            BAD  users?login=someuser
-        '''
+        Also translates the response into a dict via json.
+        Reference: https://dev.twitch.tv/docs/api/reference
+
+
+        Parameters
+        -------------
+        endpoint : str
+            The part of the endpoint link after 'twitch.tv/helix'.
+
+            note: MUST start with '/'
+
+            ex: GOOD  '/users?login=someuser'
+
+                BAD   'user?login=someuser'
+
+                BAD   'https:api.twitch.tv/helix/user?login=someuser'
+
+
+        Returns
+        ------------
+        dict
+            The data received from the endpoint in dict format.
+
+        """
         await self.logger.log(9, 'request_get', f'GET: {self.base_url}{endpoint}')
         req = request.Request(f'{self.base_url}{endpoint}', headers=self.header)
         response = json.loads(request.urlopen(req).read().decode())
@@ -89,31 +116,36 @@ class Helix:
 
 
     async def get_user_info(self, user: [str]) -> list:
-        '''
-        gets viewer info based on either their username or id
+        """Gets viewer info based on either their username or id.
 
-        arg     user    (required)  a list of strings of viewers to get info on
-                                    can either be their username or their user id or a mixture of both
-                                    note: must be a list of strings even if you're only looking up by id or even if you're only looking up one viewer
+        Reference: https://dev.twitch.tv/docs/api/reference#get-users
 
-        expected response (not output):
-        {
-            'data':
-                [ # the reason this is a list is because we can request more than one user's info at a time
-                    {   'broadcaster_type': 'affiliate', # can be 'partner', 'affiliate',  or ''
-                        'description': 'example '
-                                       'description ',
-                        'display_name': 'johndoe',
-                        'id': '1234567890',
-                        'login': 'johndoe',
-                        'offline_image_url': 'url',
-                        'profile_image_url': 'url',
-                        'type': '', # can be 'staff', 'admin', 'global_mod', or ''
-                        'view_count': 12345
-                    }
-                ]
-        }
-        '''
+
+        Parameters
+        -------------
+        user : [str]
+            A list of strings of viewers to get info on. These strings can be the viewers' usernames or user IDs or a mixture of both.
+
+            note: they MUST be strings, even though their user ID might be an int.
+
+
+        Returns
+        ------------
+        list
+            [
+                {   'broadcaster_type': 'affiliate',
+                    'description': 'example '
+                                   'description ',
+                    'display_name': 'johndoe',
+                    'id': '1234567890',
+                    'login': 'johndoe',
+                    'offline_image_url': 'url here',
+                    'profile_image_url': 'url here',
+                    'type': 'staff',
+                    'view_count': 12345
+                }
+            ]
+        """
         await self.logger.log(19, 'basic', f'getting info on user(s): {user}')
         endpoint = ''
         for u in user:
@@ -126,28 +158,46 @@ class Helix:
 
 
 
-    async def get_my_followers(self) -> dict:
-        '''
-        gets all viewers who follow the broadcaster by the broadcaster id (cannot use username)
-        returns a dict whose keys are the usernames and whose values are the user's id
-        '''
+    async def get_my_followers(self) -> ((str, str)):
+        """Gets all the viewers who follow the broadcaster.
+
+        reference: https://dev.twitch.tv/docs/api/reference#get-users-follows
+
+
+        Returns
+        -----------
+        tuple
+            contains tuples whose first elements are usernames and second elements are user IDs.
+        """
         await self.logger.log(19, 'basic', 'getting followers')
-        followers = dict()
+        followers = tuple()
         response  = await self.get_endpoint(f'/users/follows?to_id={self.broadcaster_id}&first=100')
 
         while response['data']:
             for user in response['data']:
-                followers[user['from_name']] = user['from_id']
+                followers.add((user['from_name'], user['from_id']))
             response = await self.get_endpoint(f'/users/follows?to_id={self.broadcaster_id}&first=100&after={response["pagination"]["cursor"]}')
         return followers
 
 
 
     async def follows_me(self, user_id: str) -> bool:
-        '''
-        checks to see if a viewer is following the broadcaster by user id (cannot use username)
-        returns a bool value
-        '''
+        """Checks to see if a viewer is following the broadcaster.
+
+        Reference: https://dev.twitch.tv/docs/api/reference#get-users-follows
+
+
+        Parameters
+        -------------
+        user_id : str
+            The user ID of the viewer whose follow status you want to know.
+
+
+        Returns
+        ----------
+        bool
+            True if the viewer does follow you. False if they don't.
+        """
         await self.logger.log(19, 'basic', f'determing if {user_id} is a follower')
         response = await self.get_endpoint(f'/users/follows?to_id={self.broadcaster_id}&from_id={user_id}')
         return bool(response['total'])
@@ -155,26 +205,32 @@ class Helix:
 
 
     async def get_viewers(self) -> dict:
-        '''
-        gets all viewers who are currently in chat for channel_name
-        does not call self.get_endpoint() because the base url is different
-        note: does not need headers
-        expected output:
-        {
-            "_links": {},
-            "chatter_count": 1, # how many users there are
-            "chatters":
+        """Gets all viewers who are currently in chat
+
+
+        Returns
+        ------------
+        dict
             {
-                "broadcaster": ["broadcaster username"],
-                "vips": [],
-                "moderators": [],
-                "staff": [],
-                "admins": [],
-                "global_mods": [],
-                "viewers": ["viewer1", "viewer2"]
+                "_links": {},
+                "chatter_count": 1,
+                "chatters":
+                {
+                    "broadcaster": ["broadcaster username"],
+                    "vips": [],
+                    "moderators": ["mod1"],
+                    "staff": [],
+                    "admins": [],
+                    "global_mods": [],
+                    "viewers": ["viewer1", "viewer2"]
+                }
             }
-        }
-        '''
+
+
+        Note
+        -----------
+        This is not a Helix endpoint and does not call get_endpoint()
+        """
         await self.logger.log(19, 'basic', 'getting viewers')
         await self.logger.log(9, 'request_get', f'GET tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters')
         req = json.loads(request.urlopen(f'https://tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters').read().decode())

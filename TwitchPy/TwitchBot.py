@@ -1,8 +1,6 @@
-'''
-TO DO:
-    * give API auth token so it can do things that require it (ie. mod commands).
-        * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
-'''
+# TO DO:
+#     * give API auth token so it can do things that require it (ie. mod commands).
+#         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
 
 
 
@@ -20,23 +18,63 @@ from .Websocket import IRC
 
 
 
-'''
-a driver class for the whole twitch chat bot
-the most top level structure
-'''
-
-
-
 class Client:
+    """The central part of the TwitchPy bot.
+
+    This is responsible for creating many parts of the bot as well as running everything.
+    Every bot should create an instance of this bot.
+
+
+    Keyword Arguments
+    -------------------
+    token : str
+        The bot's oauth token. MUST start with 'oauth:' .
+
+        For example, if your oauth was 123456, then this should be 'oauth:123456'
+
+    user : str
+        The username of the account the bot logs in to.
+
+    channel : str
+        The channel you want the bot to connect to.
+
+    client_id : str
+        The bot's client ID.
+
+    logger : Logger.Logger (optional)
+        The bot's custom logger. If not given, TwitchPy will give you a very basic logger (see Logger.Logger preset='default').
+
+        If you don't want any logger, create an instance of Logger.Logger without filling in any fields.
+
+        Example: bot = TwitchBot.Client(logger=Logger))
+
+    eventhandler : Events.Handler (optional)
+        An event handler if you wanted to set one up. If you do, make sure you create a class that inherits from Events.Handler .
+        For more info see Events.Handler
+
+
+    Attributes
+    -----------
+    events : Event.Handler
+        See eventhandler in keyword arguments
+
+    logger : Logger.Logger
+        See keyword arguments.
+
+    command_cogs : (Command.Cog)
+        A set of all the command cogs you added.
+
+    API : API.Helix
+        The API handler.
+
+    IRC : Websocket.IRC
+        The IRC handler.
+
+    tasks : list
+        A list of functions to execute concurrently with the bot.
+        See TwitchBot.Client.run() for more info.
+    """
     def __init__(self, *, token: str, user: str, channel: str, client_id: str, logger=Logger(preset='default'), eventhandler=Handler()):
-        '''
-        kwarg   token       (required)  bot's oauth token. note: MUST start with 'oauth:'. ex: 'oauth:123456'
-        kwarg   user        (required)  bot's username
-        kwarg   channel     (required)  the channel the bot connects to
-        kwarg   client_id   (required)  the bot's client id
-        kwarg   logger      (optional)  logger object. if not specified, will default to one.
-        kwarg   events      (optional)  events object that the bot will send event info to
-        '''
         # variables given
         self.events = eventhandler
         self.logger = logger
@@ -61,10 +99,16 @@ class Client:
 
 
     def add_cog(self, cog):
-        '''
-        adds command cogs to the bot
-        this basically just adds commands to the parts of the bot that needs access to them
-        '''
+        """Adds commands to the bot.
+
+        Commands follow a cog system that lets you categorize groups of commands, mostly for organization.
+
+
+        Parameters
+        ---------------
+        cog : Commands.Cog
+            The cog to add to the bot. To see how to make a cog, see Commands.Cog .
+        """
         asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
         self.command_cogs.add(cog)
         asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
@@ -72,20 +116,25 @@ class Client:
 
 
     def run(self, funcs: list=[]):
-        '''
-        sets up async event loops to listen to twitch chat
+        """Starts the main functions of the bot.
 
-        arg     funcs   (required)  a list of functions the user may want to run concurrently with Websocket.IRC.listen()
-                                    usually with some kind of infinite or long-running loop
-                                    these functions MUST abide by the following...
-                                        * be an async function
-                                        * asyncio.sleep(#)
-                                        * must NOT take any arguments
-                                        * must be part of a list (even if there's only one function)
-                                        * must be passed without calling it
-                                            ex: GOOD bot.run([myfunc])
-                                                BAD  bot.run([myfunc()])
-        '''
+        After initializing everything, calling this will start the bots listener to start listening to
+        twitch chat and determing which commands (if any) to execute. This will also start running
+        any async functions you want to run concurrently with the other functions of the bot.
+
+
+        Parameters
+        -------------
+        funcs : list
+            A list of async functions that you want to run alongside (concurrently) with the bot's
+            other functions. Some common uses for this is if you wanted the bot do something
+            every x seconds.
+
+            These async functions must follow these rules:
+
+                * Must have at least one call to asyncio.sleep(x) where x is an amount of time in seconds. This is what allows the concurrency. If you don't have this, the bot will get hung up on one of the tasks and not function properly.
+                * Must **NOT** take any arguments.
+        """
         try:
             asyncio.run(self.logger.log(20, 'basic', 'starting bot...'))
             self.events.on_run()
@@ -93,7 +142,7 @@ class Client:
             asyncio.set_event_loop(self._listen_loop)
 
             self._listen_loop.run_until_complete(self.IRC.connect())
-            self._listen_loop.run_until_complete(self.start(funcs))
+            self._listen_loop.run_until_complete(self._start(funcs))
         except ExpectedExit as e:
             self._listen_loop.run_until_complete(self.events.on_expected_death())
         except Exception as err:
@@ -107,12 +156,12 @@ class Client:
 
 
 
-    async def start(self, funcs: []):
-        '''
+    async def _start(self, funcs: []):
+        """
         starts all tasks we wish to run concurrently
         https://docs.python.org/3/library/asyncio-task.html#running-tasks-concurrently
         see self.run() for info on funcs args
-        '''
+        """
         self.tasks.append(asyncio.create_task(self.IRC.listen()))
         for func in funcs:
             self.tasks.append(asyncio.create_task(func()))
@@ -121,10 +170,13 @@ class Client:
 
 
     async def change_channel(self, channel: str):
-        '''
-        allows the bot to disconnect from the current chat and connect to another one
-        having the bot connected to one chat at a time is by design
-        '''
+        """Moves the bot from one twitch channel to another.
+
+        Parameters
+        -----------
+        channel : str
+            The channel to connect to.
+        """
         await self.logger.log(19, 'basic', f'changing channels to {channel}')
         self.API.broadcaster_name = channel
         self.API._test_connection()
@@ -133,9 +185,8 @@ class Client:
 
 
     async def kill(self):
-        '''
-        gracefully shuts down the bot and it's IRC connections
-        '''
+        """Gracefully shuts down the bot and it's IRC connections.
+        """
         await self.logger.log(20, 'basic', 'killing bot...')
         raise ExpectedExit
 
@@ -146,27 +197,14 @@ class Client:
     ###################### GETTER FUNCTIONS ######################
 
     def get_Logger(self) -> Logger:
-        '''
-        returns the logger so the user can use it if they were too lazy to make their own
-        '''
         return self.logger
 
 
 
     def get_API(self) -> Helix:
-        '''
-        returns the APIHandler so the user can do:
-            API = bot.get_API()
-            API.get_viewers()
-        '''
         return self.API
 
 
 
     def get_IRC(self) -> IRC:
-        '''
-        returns the websocket connection so the user can do:
-            conn = bot.get_connection()
-            conn.send(msg)
-        '''
         return self.IRC

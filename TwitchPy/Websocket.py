@@ -9,24 +9,50 @@ from .UserInfo import User
 
 
 
-'''
-handles the IRC connection to the twitch chat
-responsible for reading and sending messages
-reference: https://dev.twitch.tv/docs/irc/guide
-'''
-
-
-
 class IRC:
+    """Handles the IRC connection to twitch chat.
+
+    Is responsible for reading and sending messages and selecting which commands to execute.
+
+    Reference: https://dev.twitch.tv/docs/irc/guide
+
+
+    Parameters
+    -----------
+    logger : Logger.Logger
+        The bot's custom logger.
+
+    commands : (Commands.Cog)
+        A set of all the command cogs.
+
+    events : Event.Handler
+        The event handler.
+
+    token : str
+        The bot's oauth token.
+
+    user : str
+        The bot's username.
+
+    channel : str
+        The channel to connect to.
+
+
+    Attributes
+    --------------
+    See parameters
+
+    reader : asyncio.StreamReader
+        The object that's responsible for reading from twitch chat.
+
+        See https://docs.python.org/3/library/asyncio-stream.html#streamreader
+
+    writer : asyncio.StreamWriter
+        The object that sends messages to twitch IRC
+
+        See https://docs.python.org/3/library/asyncio-stream.html#streamwriter
+    """
     def __init__(self, logger, commands, events, token: str, user: str, channel: str):
-        '''
-        arg     logger      (required)  logger
-        arg     commands    (required)  a set of commands objects
-        arg     events      (required)  the event handler
-        arg     token       (required)  the bot's oauth token
-        arg     user        (required)  the bot's username
-        arg     channel     (required)  the channel the bot tries to connect to
-        '''
         # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing IRC...'))
@@ -49,8 +75,7 @@ class IRC:
 
 
     async def connect(self):
-        '''
-        connects to and sends twitch IRC all the info it needs to connect to chat with appropriate permissions
+        '''Connects to and sends twitch IRC all the info it needs to connect to chat with appropriate permissions
         '''
         await self.logger.log(11, 'init', f'sending credentials...')
         self.reader, self.writer = await asyncio.open_connection('irc.chat.twitch.tv', 6667)
@@ -98,9 +123,16 @@ class IRC:
 
 
     async def basic_send(self, msg: str):
-        '''
-        sends a message to the twitch irc at it's most basic level
-        NOTE won't send anything to twitch chat, for that use self.send()
+        '''Sends a message to the twitch IRC at it's most basic level.
+
+        Note
+        --------
+        This isn't for sending messages to twitch chat. For that use Websocket.IRC.send()
+
+        Parameters
+        -------------
+        msg : str
+            The message that IRC is expecting like 'CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership'.
         '''
         await self.logger.log(9, 'send', f'SEND: "{msg}"')
         self.writer.write(f'{msg}\r\n'.encode())
@@ -109,9 +141,12 @@ class IRC:
 
 
     async def send(self, msg: str):
-        '''
-        formats and sends a message to twitch chat
-        https://dev.twitch.tv/docs/irc/guide#generic-irc-commands
+        '''Sends a message to twitch chat.
+
+        Parameters
+        -----------
+        msg : str
+            The message that you want to show up in twitch chat.
         '''
         chat = Chat(self.channel)
         chat.msg = msg
@@ -123,8 +158,7 @@ class IRC:
 
 
     async def disconnect(self):
-        '''
-        disconnects from twitch IRC
+        '''Closes all connections to twitch IRC.
         '''
         await self.logger.log(19, 'basic', f'disconnecting from {self.channel}')
         self.writer.close()
@@ -133,9 +167,9 @@ class IRC:
 
 
     async def listen(self):
-        '''
-        gets chat messages as they come in.
-        ONLY gets messages in chat. shouldn't get things like subscription or follows or bit messages
+        '''An infinite loop that listens to twitch chat.
+
+        Also responsible for parsing chat messages and deciding which commands to execute (if any).
         '''
         await self.logger.log(20, 'basic', 'bot is now listening...')
         try:
@@ -159,23 +193,23 @@ class IRC:
 
                     error_code = 1
 
-                    # Commands.Cog.choose_command() will return 0 if it found a command to execute
+                    # Commands.Cog._choose_command() will return 0 if it found a command to execute
                     # so between multiple cogs, if any of them executed a command,
                     # then error_code will become 0, indicating normal function
 
-                    # Commands.Cog.choose_command() will return 1 if the message doesn't start with
+                    # Commands.Cog._choose_command() will return 1 if the message doesn't start with
                     # the appropriate prefix. aka: the message is unrelated to the cog's commands
                     # so ONLY if all cogs return 1, then the error_code will remain 1,
                     # indiciating that the chat message has nothing to do with the bot
 
-                    # Commands.Cog.choose_command() will return 2 if it didn't find a command to execute
+                    # Commands.Cog._choose_command() will return 2 if it didn't find a command to execute
                     # so assuming that no cog executes a command (which returns 0), then regardless
                     # of if certain cogs are ignored (which returns 1), or if all cogs fail to find
                     # a command (which returns 2), then error_code > 1, indicating that the a viewer
                     # tried to talk to the bot, but the bot couldn't find the right command
 
                     for cog in self.commands:
-                            error_code *= await cog.choose_command(chat)
+                            error_code *= await cog._choose_command(chat)
 
                     # error_code == 0: successfully executed a command
                     # error_code == 1: chat message is unrelated to the bot

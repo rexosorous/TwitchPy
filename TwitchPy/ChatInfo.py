@@ -3,19 +3,65 @@ from .UserInfo import User
 
 
 
-'''
+"""
 an object created whenever a viewer sends a message
 which contains information regarding the message like
 the message being sent, who sent it, and whatever else is associated with the message
-'''
+"""
 
 
 
 class Chat:
+    """Parses and holds basic information about the chat message being sent.
+
+    An object of this gets instantiated whenever a viewer sends a message through the IRC chat.
+
+
+    Parameters
+    -------------
+    channel : str
+        The channel that the bot is connected to.
+
+
+    Attributes
+    ------------
+    channel : str
+        See parameters.
+
+    tags : dict
+        Tags associated with the message.
+
+        See https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
+
+    raw_message : str
+        The raw message received from IRC. This is probably not what you want to be accessing unless you know what you're looking for.
+
+        ex: '@badge-info=subscriber/12;badges=subscriber/12,premium/1;color=#FF0000; ... PRIVMSG #someviewer :!foobar lorem ipsum'
+
+    msg : str
+        The actual message that you would see on twitch chat.
+
+        ex: '!foobar lorem ipsum'
+
+    full_args : str
+        msg without the command prefix or command name.
+
+        ex: 'lorem ipsum'
+
+    split_args : [str]
+        full_args split by spaces. This is what you'll probably use the most in your commands.
+
+        ex: ['lorem', 'ipsum']
+
+    user : User
+        Object containing basic information about the viewer who sent the message
+
+
+    Note
+    ----------
+    You shouldn't have to make an instance of this class.
+    """
     def __init__(self, channel: str):
-        '''
-        arg     channel (required)  the channel the bot is connected to
-        '''
         # variables given
         self.channel = channel
 
@@ -30,7 +76,7 @@ class Chat:
 
 
     async def _parse(self, raw_message: str):
-        '''
+        """
         parses a raw message from twitch irc client into readable/iterable data structures
         basic form of a raw message: <tags> PRIVMSG #<user> :<msg>
         EXAMPLE FORMATTED RAW MESSAGE (this would all be one line when we get it from twitch)
@@ -52,7 +98,7 @@ class Chat:
 
             PRIVMSG #gay_zach :lorem ipsum
         https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
-        '''
+        """
         self.raw_message = raw_message
         msg = raw_message
         tags = msg[1:msg.find('PRIVMSG ')].split(';')
@@ -71,7 +117,7 @@ class Chat:
 
 
     async def __create_user(self) -> User:
-        '''
+        """
         creates a user object from the viewer who types in chat
         contains basic information about them:
             username
@@ -81,7 +127,7 @@ class Chat:
             if they're a subscriber
             how long they've been subscribed
             their chat badges
-        '''
+        """
         username = self.tags['display-name']
         user_id = self.tags['user-id']
         broadcaster = 'broadcaster' in self.tags['badges']
@@ -89,7 +135,7 @@ class Chat:
         subscriber = bool(int(self.tags['subscriber']))
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         badges = self.tags['badges'].split(',')
-        return User(name=username, uid=user_id, isbroadcaster=broadcaster, ismod=moderator, issub=subscriber, sublength=sub_length, badges=badges)
+        return User(name=username, id=user_id, broadcaster=broadcaster, moderator=moderator, subscriber=subscriber, sub_length=sub_length, badges=badges)
 
 
 

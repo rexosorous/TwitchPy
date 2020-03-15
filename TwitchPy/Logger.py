@@ -1,13 +1,11 @@
-'''
-TO DO:
-    * if i'm smart enough, figure out a system to allow multiple logger types
-        for instance, i want to set one console logger, and two file loggers
-        the console logger will show init+ stuff
-        one file logger will show EVERYTHING
-        the other file logger will only store chat messages
-        >>> the problem with this is how is the user going to use filters effectively?
-            if they've got 4 different loggers, how are they going to specify the filters for each?
-'''
+# TO DO:
+#     * if i'm smart enough, figure out a system to allow multiple logger types
+#         for instance, i want to set one console logger, and two file loggers
+#         the console logger will show init+ stuff
+#         one file logger will show EVERYTHING
+#         the other file logger will only store chat messages
+#         >>> the problem with this is how is the user going to use filters effectively?
+#             if they've got 4 different loggers, how are they going to specify the filters for each?
 
 
 
@@ -19,31 +17,6 @@ from sys import stdout
 # TwitchPy Modules
 from .errors import *
 from .ChatInfo import Chat
-
-
-
-'''
-built-in logger to help debug and save information.
-features:
-    * chat formatting to change how you want your twich chat messages to look in the log
-    * custom filters for both console and file loggers to filter out what messages you do and do not want to see for both individually
-    * presets ('default', 'recommended')
-    * create basic loggers so you don't have to import logging
-    * supports creating your own logger via logging and using it in this
-
-note: while we don't inherently support more than two loggers (one for the console and one for file),
-the console logger and file logger names are purely cosmetic. we make no checks to ensure that
-those loggers have purely consolehandlers or filehandlers. additionally, we support you defining
-your own logger (via the logging module) and using the Logger.set[loggertype]() function. so you could make
-a logger, add a filehandler, and pass it to Logger.set_console_logger() and that would work without problem.
-this means that if you wanted to do things like printing to multiple files at the same time, or other
-things that might require more than two loggers, you might be able to find some crafty solutions at:
-https://docs.python.org/3/howto/logging-cookbook.html
-
-alternatively, if that's too confusing or doesn't quite allow you to do what you want to do,
-you can always catch the on_log event which will be called whenever the bot tries to log something.
-the on_log event will receive the same information that the logger would
-'''
 
 
 
@@ -62,40 +35,87 @@ logging.addLevelName(MSG, 'MSG')
 
 
 class Logger:
-    def __init__(self, *, preset: str='', chatfmt: str='%(user.name)s: %(msg)s', eventhandler=None):
-        '''
-        arg     preset          (optional)  determines what kind of preset logger to make
-                                            can be 'default' or 'recommended'
-                                            default = only console logger
-                                            recommended = our recommended loggers
-                                            if not provided, will make an empty logger so nothing will get logged
+    """Semi-Custom Logger to log things as they happen.
 
-        arg     chatfmt         (optional)  the % string format to dictate how the logger logs twitch chat messages
-                                            the %(variables) should be in scope UserInfo.User
-                                            so if you wanted to only get the full twitch message, you would use
-                                                '%(msg)s'      not     '%(chat.msg)s'
-                                            the default is '%(user.name)s: %(msg)s' which would print
-                                                someuser: lorem ipsum
-                                            another example: '%(user.name)s says "%(msg)s"' which would print
-                                                someuser says "lorem ipsum"
-                                            note: information is very limited for outgoing messages. you'll only get
-                                            chat.msg, chat.channel, chat.user.name
-                                            while other fields might exist, they won't be accurate
+    Uses logging library's logger, but with some extra features added on top.
+    If you want to utilize this feature, you should make an instance of this class,
+    configure it to how you like it, and then pass it into TwitchBot.Client like
+    TwitchBot.Client(logger=MyLogger).
 
-        arg     eventhandler    (optional)  an Events.Events() object just so this module can call the on_log event
-                                            you can instantiate this class with one and then pass it onto Client like
-                                                mylogger = Logger.Logger(eventhandler=myeventhandler)
-                                                mybot = TwitchPy.Client(logger=mylogger, eventhandler=myeventhandler)
-                                            but this is not necessary. see set_eventhandler() below
-        '''
+    Features:
+
+        * chat formatting to change how you want your twich chat messages to look in the log
+        * custom filters for both console and file loggers to filter out what messages you do and do not want to see for both individually
+        * presets ('default', 'recommended')
+        * lets you create basic loggers so you don't have to import logging
+        * supports creating your own logger via logging and using it in this
+
+
+    Keyword Arguments
+    -----------------
+    preset : {'default', 'recommended'} (optional)
+        If you're too lazy to customize your logger or just don't have many strong feelings about what you want,
+        we offer two presets that you can use.
+
+        'default' is a very basic, console-only logger that only shows basic functions the bot is doing.
+
+        'recommended' is what we built the logger with in mind. It prints to console all the init messages and
+        above, but logs to a file 'TwitchBot.log' only basic functions and above.
+
+    chatfmt : str (optional)
+        The % string format to dictate how the logger should log chat messages. The variables should be in the
+        scope of ChatInfo.Chat . So if you wanted to access the username of who sent the message you would use
+        '%(user.name)s'. If not given, chatfmt will default to '%(user.name)s: %(msg)s'.
+
+
+    Note
+    ------------
+    If you don't want the bot to have a logger, you **must still create an instance of this class**.
+    When you do, don't define any of the paramters and the bot won't log anything.
+
+
+    Attributes
+    -----------
+    console : logging.Logger
+        An instance of logging.Logger used specifically to log to the console.
+
+    file : logging.Logger
+        An instance of logging.Logger used specifically to log to files.
+
+    filter : dict
+        A filter so you can decide what the console and file loggers can and can't log.
+        Note: This is not the filter from the logging library.
+
+
+    Note
+    ---------
+    We hold two instances of loggers (console and file) so you can more precisely control the behaviors of each,
+    allowing the console logger to act differently than the file logger.
+
+    Note
+    --------
+    While we don't inherently support more than two loggers (one for the console and one for file),
+    the console logger and file logger names are purely cosmetic. We make no checks to ensure that
+    those loggers have purely consolehandlers or filehandlers. Additionally, we support you defining
+    your own logger (via the logging module) and using the Logger.set[loggertype]() function. So you could make
+    a logger, add a filehandler, and pass it to Logger.set_console_logger() and that would work without problem.
+    This means that if you wanted to do things like printing to multiple files at the same time, or other
+    things that might require more than two loggers, you might be able to find some crafty solutions at:
+    https://docs.python.org/3/howto/logging-cookbook.html
+
+    Alternatively, if that's too confusing or doesn't quite allow you to do what you want to do,
+    you can always catch the on_log event which will be called whenever the bot tries to log something.
+    The on_log event will receive the same information that the logger would.
+    """
+    def __init__(self, *, preset: str='', chatfmt: str='%(user.name)s: %(msg)s'):
         # variables given
         self.chatfmt = chatfmt
-        self.events = eventhandler
 
         # variables created
         self.console = None
         self.file = None
         self.filter = dict()
+        self.events = None
 
         # additional setup
         self._choose_preset(preset)
@@ -103,11 +123,11 @@ class Logger:
 
 
     def _choose_preset(self, preset: str):
-        '''
+        """
         chooses a preset by str
         should only really be done during Logger.__init__()
         presets are defined by me
-        '''
+        """
         if preset == 'default':
             self.create_console_logger(level=19)
         elif preset == 'recommended':
@@ -120,14 +140,29 @@ class Logger:
                                 fmt='[%(levelname)-8s] [%(module)-10s] [%(asctime)s] %(message)s',
                                 datefmt='%H:%M:%S',
                                 level=11):
-        '''
-        a convenient function to create a logger without the user having to import logging
+        """A convenient function to create a logger without you having to import the loggin module.
 
-        kwarg   fmt     (optional)  the format of the log messages. see https://docs.python.org/2/library/logging.html#logrecord-attributes
-        kwarg   datefmt (optional)  the format of time gotten by %(asctime)s. see https://docs.python.org/3/library/time.html#time.strftime
-        kwarg   level   (optional)  the level of the logger, it can be one of loggin's levels (https://docs.python.org/3/library/time.html#time.strftime)
-                                    or the ones defined above
-        '''
+        Note: This will set Logger.Logger.console
+
+
+        Keyword Arguments
+        -------------------
+        fmt : str (optional)
+            See https://docs.python.org/2/library/logging.html#logrecord-attributes
+
+            If not given, will default to '[%(levelname)-8s] [%(module)-10s] [%(asctime)s] %(message)s'
+
+        datfmt : str (optional)
+            See see https://docs.python.org/3/library/time.html#time.strftime
+
+            If not given, will default to '%H:%M:%S'
+
+        level : int (optional)
+            The minimum value for log levels that the bot will pay attention to.
+            See https://docs.python.org/2/library/logging.html#logging-levels for logging's levels and
+            see Logging for TwitchPy's custom levels.
+            If not given, will default to 11 or Logging.INIT
+        """
         self.console = logging.getLogger('console')
         console_handler = logging.StreamHandler(stdout)
         console_handler.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
@@ -142,12 +177,19 @@ class Logger:
                                 fmt='[%(levelname)-8s] [%(module)-10s] [%(asctime)s] %(message)s',
                                 datefmt='%Y/%m/%d - %H:%M:%S',
                                 level=19):
-        '''
-        see create_console_logger for kwargs not listed here
+        """See Logger.Logger.create_console_logger() for any missing information
 
-        kwarg   filename    (optional)  the path/name of the file to log to
-        kwarg   filemode    (optional)  the writing mode. basically just 'w' or 'a'
-        '''
+        Note: This will set Logger.Logger.file
+
+
+        Keyword Arguments
+        ------------------
+        filename : str (optional)
+            The path / filename of the file to log to. If not given, will default to 'TwitchBot.log'
+
+        filemode : {'w', 'a'} (optional)
+            The writing mode. If not given, will default to 'w'.
+        """
         self.file = logging.getLogger('file')
         file_handler = logging.FileHandler(filename, filemode)
         file_handler.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
@@ -157,19 +199,52 @@ class Logger:
 
 
     def console_filter(self, filter_: [str]):
-        '''
-        NOT to be confused with logging filters: https://docs.python.org/3/library/logging.html#filter-objects
-        filter should be things the user does NOT want to see
-        each filter should be structured as so:
-            [Module]-[Type]
-            Helix-init
-        a full example might be:
-            ['API-request_get', 'API-request_response', 'Websocket-send', 'Websocket-recv']
+        """Lets you set custom filters to decide what you do and do not want your logger to see.
 
-        we also support users setting up filters for their own log messages. see log() for more details
+        For most purposes, just setting the logger's level is good enough, but this is here to give you even
+        finer control than that.
 
-        full filter structure with all the types
+        Note: This will only effect Logger.Logger.console
 
+
+        Note
+        -----------
+        **NOT** to be confused with logging filters: https://docs.python.org/3/library/logging.html#filter-objects
+
+
+        Parameters
+        ------------
+        filter_ : [str]
+            A list of all the things you do **NOT** want the logger to see.
+            Each entry should be structured as so: Module-Type
+
+            A list of all bot filters:
+                * 'TwitchBot-init' : init related messages
+                * 'TwitchBot-basic' : the basic function of the module
+                * 'TwitchBot-error' : error messages
+                * 'API-init'
+                * 'API-basic'
+                * 'API-request_get' : exactly what the bot is sending via requests
+                * 'API-request_response' : the exact response from the twitch API endpoint
+                * 'API-error'
+                * 'Websocket-init'
+                * 'Websocket-basic'
+                * 'Websocket-incoming' : only the incoming messages from twitch chat
+                * 'Websocket-outgoing' : only the outgoing messages from twitch chat
+                * 'Websocket-send' : exactly what the bot sends via websocket
+                * 'Websocket-recv' : what twitch IRC sends back at us
+                * 'Websocket-error'
+                * 'Events-init'
+
+
+            A full example might be: ['API-request_get', 'API-request_response', 'Websocket-send', 'Websocket-recv']
+
+            We also support you setting up your own system of log types which is why we leave this field open ended
+            instead of forcing you to stick to TwitchPy's filters.
+        """
+
+        """
+        full filter structure
         'TwitchBot': {
             'init': (),
             'basic': ()
@@ -193,7 +268,7 @@ class Logger:
         'Events': {
             'init': ()
         }
-        '''
+        """
 
         for fil in filter_:
             module = fil[:fil.find('-')]
@@ -206,9 +281,10 @@ class Logger:
 
 
     def file_filter(self, filter_: [str]):
-        '''
-        see console_filter for a detailed explanation
-        '''
+        """See Logger.Logger.console_filter() for a detailed explanation
+
+        Note: this will only effect Logger.Logger.file
+        """
         for fil in filter_:
             module = fil[:fil.find('-')]
             type_ = fil[fil.find('-')+1:]
@@ -220,28 +296,29 @@ class Logger:
 
 
     async def log(self, level: int, type_: str, msg: str, exc = None):
-        '''
-        makes a logging record object (https://docs.python.org/3/library/logging.html#logrecord-objects)
-        by filling in the fields with information gathered from inspect frames (https://docs.python.org/3/library/inspect.html#the-interpreter-stack)
-        then logs with the appropriate loggers according to the filters
-        then passes on the record to the on_log event
+        """Checks filters and logs your messages accordingly.
 
-        we support users sending their own log messages to the logger. they obviously must provide the required args as listed below.
-        they are free to add their own logging levels with logging.addLevelName() as described in https://docs.python.org/3/library/logging.html#logging.addLevelName
-        they just need to keep in mind not to make levels that clash with ours:
-            LOWLVL  9
-            INIT    11
-            BASIC   19
-            MSG     21
-        they must also keep in mind that we have defined type_'s that might cause logic errors (see above)
+        Makes a logging record object (https://docs.python.org/3/library/logging.html#logrecord-objects)
+        by filling in the fields with information gathered from inspect frames (https://docs.python.org/3/library/inspect.html#the-interpreter-stack),
+        then logs with the appropriate loggers according to the filters, and finally passes on the record to the on_log event.
 
-        arg     level   (required)  the logging level to log by
-        arg     type_   (required)  the type of log message (see constants above)
-        arg     msg     (required)  the message of the log. can either be string or chat object
-                                    we want to be able to catch the chat object to allow users
-                                    to format how chat messages are sent to the logger
-        arg     exc     (optional)  exception info obtained from sys.exc_info()
-        '''
+
+        Parameters
+        -------------
+        level : int
+            The level of the log message. See https://docs.python.org/2/library/logging.html#logging-levels-attributes for logging's levels
+            and Logger.Logger for TwitchPy's levels. Alternatively, you can send your own level independent of both of.
+
+        type_: str
+            The type of log message. You can use the bot's system of message types if you want, but we also support you setting
+            up your own system of message types.
+
+        msg : str
+            The message that's going to be logged.
+
+        exc : sys.exc_info() (optional)
+            You only need this if you're logging an error and must be obtained from sys.exc_info()
+        """
 
         # the following is a really cooky way to get information about the calling function
         # i don't rightly understand it too well, but it works
@@ -251,14 +328,14 @@ class Logger:
 
 
         if isinstance(msg, Chat): # check if this is a string or a twitch chat message
-            '''
+            """
             we get dicts for the chat object which is exactly what we need to use for string formatting
             see https://realpython.com/python-string-formatting/#1-old-style-string-formatting-operator
             this would be good enough, but the variable chat.user is an object itself and so we need
             to add chat.user's dict to chat.__dict__
             we also need to adjust the key names in chat.user.__dict__ so that they all begin with 'user.'
             just for clarity for the user
-            '''
+            """
             user_vars = msg.user.__dict__
             fixed_user_vars = dict()
             for var in user_vars:   # dict keys are immutable, so in order to put 'user.' in front of the keys, we need to make a new dict
@@ -286,28 +363,45 @@ class Logger:
     ###################### SETTER FUNCTIONS ######################
 
     def set_eventhandler(self, events):
-        '''
-        if the user does not define an eventhandler on their own or forgets to pass it to this class,
-        TwitchPy.Client is designed to give this it's eventhandler
-        '''
+        """Allows you to set the event handler.
+
+
+        Parameters
+        ------------
+        events : Events.Handler
+            This should be an instance of a class that inherits from Events.Handler .
+            Normally, you shouldn't have to use this as the bot will do this for you, but this is here to give you
+            more control over the bot if you want to do something very specific.
+        """
         self.events = events
 
 
 
     def set_chatfmt(self, chatfmt: str):
-        '''
-        allows the user to set the irc chat format in % string formatting
-        see __init__ comments for more details
-        '''
+        """Allows you to set how IRC chat is displayed when it's logged.
+
+
+        Parameters
+        ---------------
+        chatfmt : str
+            See Logger.Logger for more details.
+        """
         self.chatfmt = chatfmt
 
 
 
     def set_console_logger(self, logger):
-        '''
-        allows a user to define their own logger using the logging module
-        note: MUST be from the logging module
-        '''
+        """An alternative way to set the console logger.
+
+        Instead of creating one using Logger.Logger.create_console_logger(), you can define your own
+        logging logger outside of this class, and use this function to give it to the bot.
+
+
+        Parameters
+        ------------
+        logger : logging.Logger
+            MUST be a logger created by the logging module.
+        """
         if not isinstance(logger, logging.Logger):
             raise InvalidLogger
         self.console = logger
@@ -315,9 +409,8 @@ class Logger:
 
 
     def set_file_logger(self, logger):
-        '''
-        see set_console_logger
-        '''
+        """See Logger.Logger.set_console_logger()
+        """
         if not isinstance(logger, logging.Logger):
             raise InvalidLogger
         self.file = logger

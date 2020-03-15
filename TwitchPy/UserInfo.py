@@ -1,31 +1,48 @@
-'''
-more or less just a container for basic information about a viewer
-we could've used a dict, but i want to keep this open to adding more functionality
-'''
-
-
-
 class User:
-    def __init__(self, name: str, uid: str, isbroadcaster: bool, ismod: bool, issub: bool, sublength: int, badges: [str]):
-        '''
-        arg     name            (required)  the username of the viewer
-        arg     uid             (required)  the user id of the viewer
-        arg     isbroadcaster   (required)  true if the viewer is the broadcaster of the channel else false
-        arg     ismod           (required)  true if the viewer is a moderator of the channel else false
-        arg     issub           (required)  true if the viewer is a subscriber to the channel else false
-        arg     sublength       (required)  how long (in months) a subscriber has been subscribed
-        arg     badges          (required)  a list of the all the badges the viewer has in the chat
+    """More or less just a container to hold information on the viewer who sent a message.
 
-        note: can't keep track of follower status because that requires an API call and isn't part of the chat message
-        i could have User hold an instance of API or something similar, but it seems like overkill for one thing.
-        '''
+    Parameters
+    -----------
+    name : str
+        The username of the viewer.
+
+    uid : str
+        The user ID of the viewer.
+
+    broadcaster : bool
+        True if this viewer is the broadcaster (streamer).
+
+    moderator : bool
+        True if this viewer is a moderator of the channel.
+
+    subscriber : bool
+        True if this viewer is a subscriber of the channel.
+
+    sub_legnth : int
+        If the viewer is a subscriber, how long in months they've been subscribed.
+        If they are not a subscriber, this will be 0.
+
+    badges : [str]
+        A list of all the chat badges the viewer has.
+
+
+    Attributes
+    ------------
+    See Parameters
+
+
+    Note
+    ------------
+    Does not keep track of follower status because that requries an API call.
+    """
+    def __init__(self, name: str, id: str, broadcaster: bool, moderator: bool, subscriber: bool, sub_length: int, badges: [str]):
         # variables given
         self.name = name
         self.id = uid
-        self.broadcaster = isbroadcaster
-        self.moderator = ismod
-        self.subscriber = issub
-        self.sub_length = sublength
+        self.broadcaster = broadcaster
+        self.moderator = moderator
+        self.subscriber = subscriber
+        self.sub_length = sub_length
         self.badges = badges
 
 
