@@ -1,6 +1,9 @@
 # TO DO:
 #     * give API auth token so it can do things that require it (ie. mod commands).
 #         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
+#     * have add_cog take a list of cogs instead just to make it a bit easier to add multiple cogs
+#     * for all functions that take a list, make a check to see if they're a list and fix it if it's not.
+#     * do more input sanitization and throw errors
 
 
 
@@ -35,11 +38,11 @@ class Client:
     user : str
         The username of the account the bot logs in to.
 
-    channel : str
-        The channel you want the bot to connect to.
-
     client_id : str
         The bot's client ID.
+
+    channel : str
+        The channel you want the bot to connect to.
 
     logger : Logger.Logger (optional)
         The bot's custom logger. If not given, TwitchPy will give you a very basic logger (see Logger.Logger preset='default').
@@ -74,7 +77,7 @@ class Client:
         A list of functions to execute concurrently with the bot.
         See TwitchBot.Client.run() for more info.
     """
-    def __init__(self, *, token: str, user: str, channel: str, client_id: str, logger=Logger(preset='default'), eventhandler=Handler()):
+    def __init__(self, *, token: str, user: str, client_id: str, channel: str, logger=Logger(preset='default'), eventhandler=Handler()):
         # variables given
         self.events = eventhandler
         self.logger = logger

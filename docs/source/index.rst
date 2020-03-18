@@ -8,7 +8,8 @@ Welcome to TwitchPy's documentation!
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
+
+   Guides&Help
 
    References
 
@@ -18,3 +19,4 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`search`
+* `Github Link <http://google.com>`_

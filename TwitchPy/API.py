@@ -94,11 +94,11 @@ class Helix:
 
             note: MUST start with '/'
 
-            ex: GOOD  '/users?login=someuser'
+            ex: GOOD  '/users?login=someviewer'
 
-                BAD   'user?login=someuser'
+                BAD   'user?login=someviewer'
 
-                BAD   'https:api.twitch.tv/helix/user?login=someuser'
+                BAD   'https:api.twitch.tv/helix/user?login=someviewer'
 
 
         Returns
@@ -132,19 +132,9 @@ class Helix:
         Returns
         ------------
         list
-            [
-                {   'broadcaster_type': 'affiliate',
-                    'description': 'example '
-                                   'description ',
-                    'display_name': 'johndoe',
-                    'id': '1234567890',
-                    'login': 'johndoe',
-                    'offline_image_url': 'url here',
-                    'profile_image_url': 'url here',
-                    'type': 'staff',
-                    'view_count': 12345
-                }
-            ]
+            An example: ``[{'broadcaster_type': 'affiliate', 'description': 'example ' 'description ', 'display_name': 'johndoe',
+            'id': '1234567890', 'login': 'johndoe', 'offline_image_url': 'url here', 'profile_image_url': 'url here', 'type': 'staff',
+            'view_count': 12345}]``
         """
         await self.logger.log(19, 'basic', f'getting info on user(s): {user}')
         endpoint = ''
@@ -211,20 +201,8 @@ class Helix:
         Returns
         ------------
         dict
-            {
-                "_links": {},
-                "chatter_count": 1,
-                "chatters":
-                {
-                    "broadcaster": ["broadcaster username"],
-                    "vips": [],
-                    "moderators": ["mod1"],
-                    "staff": [],
-                    "admins": [],
-                    "global_mods": [],
-                    "viewers": ["viewer1", "viewer2"]
-                }
-            }
+            An example: ``{"_links": {}, "chatter_count": 1, "chatters": {"broadcaster": ["broadcaster username"], "vips": [],
+            "moderators": ["mod1"], "staff": [], "admins": [], "global_mods": [], "viewers": ["viewer1", "viewer2"]}}``
 
 
         Note

@@ -3,6 +3,7 @@
 #   * maybe give commands access to events and logger? this would mean i don't have to return
 #     those numbers and can have more detailed logs and events
 #   * allow sub length and badges for command permissions
+#   * make functions take arguments instead of having to do chat.split_args
 
 
 
