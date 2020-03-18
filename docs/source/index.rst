@@ -19,4 +19,4 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`search`
-* `Github Link <http://google.com>`_
+* `Github Link <https://github.com/rexosorous/TwitchPy>`_
