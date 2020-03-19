@@ -1,9 +1,5 @@
 # TO DO:
-#   * be smart enough to make choose_command() cleaner. especially with those return statements
-#   * maybe give commands access to events and logger? this would mean i don't have to return
-#     those numbers and can have more detailed logs and events
 #   * allow sub length and badges for command permissions
-#   * make functions take arguments instead of having to do chat.split_args
 
 
 
@@ -26,6 +22,14 @@ class Cog:
         The prefix for these commands so the bot knows that the following message is meant for it.
         For example, most bots use '!' as their prefix.
 
+    logger : Logger.Logger (optional)
+        TwitchPy's logger. If not given, TwitchPy will give whatever instance of Logger.Logger that
+        TwitchBot.Client has when TwitchBot.Client.add_cog() is called.
+
+    eventhandler : Events.Handler (optional)
+        The eventhandler. If not given, TwitchPy will give whatever instance of Events.Handler that
+        TwitchBot.Client has when TwitchBot.Client.add_cog() is called.
+
 
     Attributes
     -----------
@@ -36,9 +40,11 @@ class Cog:
         A dictionary containing all of your commands whose keys are ('commandname', argcount) and
         whose values are the Commands.Command objects. What's argcount? see Commands.create() for more info.
 
-    command_keys : list
-        A list whose elements are the tuples that are used by all_commands and is sorted by
-        argcount in reverse order.
+    logger : Logger.Logger
+        See keyword arguments
+
+    events : Events.Handler
+        See keyword arguments
 
 
     Note
@@ -76,7 +82,7 @@ class Cog:
     >>> %ping
     pong
     """
-    def __init__(self, *, prefix: str):
+    def __init__(self, *, prefix: str, logger=None, eventhandler=None):
         """
         kwarg   prefix  (required)  the prefix that will let the bot know to try to execute commands
                                     ex: if the prefix is '!', then the bot will ignore all messages that don't start with '!'
@@ -85,8 +91,9 @@ class Cog:
         self.prefix = prefix
 
         # variables created
-        self.all_commands = dict()
-        self.command_keys = list()
+        self.all_commands = set()
+        self.logger = logger
+        self.events = eventhandler
 
         # additional setup
         self.__init_functions()
@@ -103,21 +110,27 @@ class Cog:
         for _, obj in members:
             if isinstance(obj, Command):
                 obj.instance = self
-                self.all_commands[(obj.name, obj.argcount)] = obj
-                for alias in obj.aliases:
-                    self.all_commands[(alias, obj.argcount)] = obj
+                self.all_commands.add(obj)
 
-        self.command_keys = sorted(self.all_commands, key=lambda x: x[1], reverse=True)
+        self.all_commands = sorted(self.all_commands, key=lambda command: command.func.__code__.co_argcount, reverse=True)
             # sort commands by argcount to make selecting one easier
-            # because they sorted in reverse, self.choose_command will
+            # because they are sorted in reverse, self.choose_command will
             # prioritize the one with more args
-            # this is mainly to prefer commands with argcount defined
-            # over commands without argcount defined
-            # ex: command(name='mycommand', argcount=2)
-            #       should be prioritized over
-            #     command(name='mycommand')
-            # note: these are only keys because you can't sort the whole dictionary
-            #       so make sure to traverse the keys, not the dict
+            # so if we have two funcs
+            #   def func1(arg1, *args):
+            #   def func2(arg1, arg2, arg3, *args):
+            # and we have 5 args to pass, it'll prefer func2 over func1
+
+
+
+    def _init_attributes(self, logger, events):
+        """
+        if the user hasn't given this cog a logger and/or eventhandler, give this cog whatever TwitchBot.Client has
+        """
+        if not self.logger:
+            self.logger = logger
+        if not self.events:
+            self.events = events
 
 
 
@@ -126,34 +139,30 @@ class Cog:
         determines which command to execute, if any
         """
         if not chat.msg.startswith(self.prefix):   # first determine if the bot is even being called
-            return 1  # indicates that the cog isn't called
+            await self.events.on_no_cmd(chat)
+            return
 
         msg = chat.msg[len(self.prefix):]          # remove the prefix from the message
 
-        for command, argcount in self.command_keys:
-            # determine which command to execute
-            # we do it this way instead of
-            #   if command in self.all_commands
-            # because we want to allow users to have commands with spaces in it
-            if msg.startswith(command) and (len(msg) == len(command) or msg[len(command)] == ' '):
-                # we need to check for a space after the 'command' or if there's nothing after the 'command'
-                # if we have two commands: 'test' and 'test2'
-                # a viewer who tries to do !test, will invariably trigger test2 as well if we didn't check for a space after
-                # so we check if '!test' has a space after it or if there's nothing after to avoid it
-                chat.args = msg[len(command)+1:]
-                chat.split_args = msg[len(command)+1:].split(' ')
+        for command in self.all_commands:
+            if (command_name := [n for n in command.names if msg.startswith(n)]):   # checks if chat message starts with the command name
+                arg_msg = msg[len(command_name[0])+1:]
+                args = arg_msg.split(' ') if arg_msg else []
 
-                if argcount == len(chat.split_args) or argcount == -1: # check if the chat message has the correct amount of arguments
-                    obj = self.all_commands[(command, argcount)]
+                if len(args) >= command.func.__code__.co_argcount-2:   # checks if there are even enough args
+                    chat.arg_msg = arg_msg
+                    chat.args = args
+                    try:
+                        await command.func(command.instance, chat, *args) # attempt to call the function which might fail
+                        await self.events.on_cmd(chat)
+                        return
+                    except TypeError:
+                        # this might happen if we send the command too many args
+                        pass
 
-                    # check if the viewer is allowed to use this command
-                    if self._check_permissions(chat.user, obj):
-                        await obj.func(obj.instance, chat)
-                        return 0   # indicates successful execution
 
-        # if we've reached this point, then there exists no command
-        # that the user is trying to call
-        return 2 # indicates failure to find command to execute
+        await self.logger.log(30, 'error', 'unable to find command')
+        await self.events.on_bad_cmd(chat)
 
 
 
@@ -217,14 +226,8 @@ class Command:
     func : function
         The function that the command will execute when it's called.
 
-    name : str
-        The name of the command.
-
-    aliases : [str]
-        Any other names that the command can be executed by.
-
-    argcount : int
-        How many arguments this command expects to receive.
+    names : [str]
+        All the names the command will execute by.
 
     permission : {'notest', 'everyone', 'subscriber', 'moderator', 'broadcaster'}
         Who is allowed to use this command based on their affiliation with the channel.
@@ -249,11 +252,9 @@ class Command:
     You shouldn't have to make an instance of this class. But it might be useful for you to know
     what attributes this Class has if you plan on making your own command parser.
     """
-    def __init__(self, func, name: str, aliases: [str], argcount: int, permission: str, whitelist: [str]):
+    def __init__(self, func, names: [str], permission: str, whitelist: [str]):
         self.func = func
-        self.name = name
-        self.aliases = aliases
-        self.argcount = argcount
+        self.names = names
         self.permission = permission
         self.whitelist = whitelist
 
@@ -262,7 +263,7 @@ class Command:
 
 
 
-def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str='notset', whitelist: [str]=[]):
+def create(*, name: str or [str]=[], permission: str='notset', whitelist: [str]=[]):
     """A decorator function used to create new commands.
 
     Requirements for creating your own command:
@@ -278,16 +279,9 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str
 
     Keyword Arguments
     -------------------
-    name : str (optional)
-        The name of the command. AKA: what the viewer will type after the prefix to execute the command.
+    name : str or [str] (optional)
+        The name(s) of the command. AKA: what the viewer will type after the prefix to execute the command.
         If not given, the command name will be the name of the function.
-
-    aliases : [str] (optional)
-        Any other names you want the command to be executed by.
-
-    argcount: int (optional)
-        How many arguments this command should expect. If not given, the command will execute regardless
-        of how many arguments are given.
 
     permission : {'notset', 'everyone', 'subscriber', 'moderator', 'broadcaster'} (optional)
         Based on their affiliation to the channel, which users are allowed to use this command.
@@ -319,7 +313,7 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str
     no matter how many arguments are sent. So '!ping lorem ipsum' will still work. And because permission
     and whitelist are not defined, there's no restrictions on who can use this command.
 
-    >>> @Command.create(name='hello', aliases=['hi', 'howdy'])
+    >>> @Command.create(name=['hello', 'hi', 'howdy'])
     >>> async def sayhello(self, chat):
     >>>     self.IRC.send('HeyGuys')
 
@@ -327,19 +321,29 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str
     name is defined, the command name won't be set to the function name: sayhello. Because aliases is
     defined with two strings, this command can be executed using any of the 3 names.
 
-    >>> @Command.create(name='hello', argcount=2)
-    >>> async def advancedhello(self, chat):
+    >>> @Command.create(name=['hello', 'hi', 'howdy'])
+    >>> async def advancedhello(self, chat, arg1, arg2, arg3):
     >>>     self.IRC.send('VoHiYo')
 
-    This command says in chat 'VoHiYo' whenever a viewer says '!hello' followed by two other words (argcount)
-    So '!hello lorem ipsum' or '!hello my guys' or '!hello a b' would all work because there are two
-    words (argcount) after the command. Note that we now have two commands with the name '!hello'.
-    This is allowed because they work on two different argcounts. The function advancedhello is called
-    only if there are two args and the function sayhello will get called whenever there's any other number
-    of args. That is to say, if there are multiple functions with the same name, the bot will prioritize
-    executing commands with argcount defined over ones without argcount defined.
+    This command says in chat 'VoHiYo' whenever a viewer says '!hello' followed by three words (arg1, arg2, arg3)
+    So '!hello all my friends' or '!hello to everyone here' or '!hello a b c' would all work because there are
+    three words after the command nane. Note that we now have two commands with the name '!hello'. This is
+    allowed because they work on two different argcounts. The function advancedhello is called only if there
+    is three args and the function sayhello will get called whenever there's no args.
 
-    NOTE: If you have two commands with the same name and argcount, only one of them will execute.
+    >>> @Command.create(name=['hello', 'hi', 'howdy'])
+    >>> async def mediumhello(self, chat, arg1, *args):
+    >>>     self.IRC.send('wassup')
+
+    Because of *args, this command will execute if there's 1 or more args. There needs to be at least
+    1 arg because of arg1 any extra args will be captured by *args as a list. TwitchPy will prioritize
+    commands with more args, so TwitchPy will try to execute advancedhello before mediumhello.
+    So if there's 3 args, advancedhello will be called even though mediumhello can take any number of
+    args > 1. If there's 4 args, mediumhello is called. If there's 2 args, mediumhello is called. If
+    there's 1 arg, mediumhello is called.
+
+    NOTE: If two commands have the same name and argcounts (*args does not count toward argcount), then
+    only one will be executed.
 
     >>> @Command.create(permisison='moderator')
     >>> async def permissionhello(self, chat):
@@ -363,6 +367,8 @@ def create(*, name: str='', aliases: [str]=[], argcount: int=-1, permission: str
     """
     def decorator(func):
         cmd_name = name or func.__name__
-        cmd = Command(func, name=cmd_name, aliases=aliases, argcount=argcount, permission=permission, whitelist=whitelist)
+        if isinstance(cmd_name, str):
+            cmd_name = [cmd_name]
+        cmd = Command(func, names=cmd_name, permission=permission, whitelist=whitelist)
         return cmd
     return decorator

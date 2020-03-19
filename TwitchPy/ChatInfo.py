@@ -43,13 +43,13 @@ class Chat:
 
         ex: '!foobar lorem ipsum'
 
-    full_args : str
+    arg_msg : str
         msg without the command prefix or command name.
 
         ex: 'lorem ipsum'
 
-    split_args : [str]
-        full_args split by spaces. This is what you'll probably use the most in your commands.
+    args : [str]
+        arg_msg split by spaces. This is what you'll probably use the most in your commands.
 
         ex: ['lorem', 'ipsum']
 
@@ -69,8 +69,8 @@ class Chat:
         self.tags = dict()
         self.raw_message = ''   # the raw message received from twitch
         self.msg = ''           # includes bot prefix and command name
-        self.full_args = ''     # command args. aka: the message without prefix or command name
-        self.split_args = []    # full_args split by spaces to better access them
+        self.arg_msg = ''       # msg without prefix or command name
+        self.args = []          # arg_msg split by spaces to better access them
         self.user = None
 
 
@@ -135,7 +135,7 @@ class Chat:
         subscriber = bool(int(self.tags['subscriber']))
         sub_length = int(self.tags['badge-info'][self.tags['badge-info'].find('/')+1:]) if self.tags['subscriber'] else 0
         badges = self.tags['badges'].split(',')
-        return User(name=username, id=user_id, broadcaster=broadcaster, moderator=moderator, subscriber=subscriber, sub_length=sub_length, badges=badges)
+        return User(name=username, uid=user_id, broadcaster=broadcaster, moderator=moderator, subscriber=subscriber, sub_length=sub_length, badges=badges)
 
 
 

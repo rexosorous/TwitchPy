@@ -191,35 +191,7 @@ class IRC:
                     await self.logger.log(21, 'incoming', chat)
                     await self.events.on_msg(chat)
 
-                    error_code = 1
-
-                    # Commands.Cog._choose_command() will return 0 if it found a command to execute
-                    # so between multiple cogs, if any of them executed a command,
-                    # then error_code will become 0, indicating normal function
-
-                    # Commands.Cog._choose_command() will return 1 if the message doesn't start with
-                    # the appropriate prefix. aka: the message is unrelated to the cog's commands
-                    # so ONLY if all cogs return 1, then the error_code will remain 1,
-                    # indiciating that the chat message has nothing to do with the bot
-
-                    # Commands.Cog._choose_command() will return 2 if it didn't find a command to execute
-                    # so assuming that no cog executes a command (which returns 0), then regardless
-                    # of if certain cogs are ignored (which returns 1), or if all cogs fail to find
-                    # a command (which returns 2), then error_code > 1, indicating that the a viewer
-                    # tried to talk to the bot, but the bot couldn't find the right command
-
                     for cog in self.commands:
-                            error_code *= await cog._choose_command(chat)
-
-                    # error_code == 0: successfully executed a command
-                    # error_code == 1: chat message is unrelated to the bot
-                    # error_code >= 2: failure to find a command to execute
-                    if error_code == 0:
-                        await self.events.on_cmd(chat)
-                    elif error_code == 1:
-                        await self.events.on_no_cmd(chat)
-                    elif error_code > 1:
-                        await self.logger.log(30, 'error', 'unable to find command')
-                        await self.events.on_bad_cmd(chat)
+                            await cog._choose_command(chat)
         finally:
             await self.disconnect()

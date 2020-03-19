@@ -121,7 +121,7 @@ class Handler:
 
     async def on_cmd(self, chat):
         """
-        Called whenever a command executes successfully.
+        Called after a command executes successfully.
 
 
         Parameters
@@ -150,8 +150,8 @@ class Handler:
 
     async def on_no_cmd(self, chat):
         """
-        Called whenever a user sends a message in chat that has nothing to do with the bot.
-        AKA: the user didn't use any of the command prefixes.
+        Called whenever a viewer sends a message in chat that has nothing to do with a command cog.
+        AKA: when the viewer doesn't use that cog's prefix.
 
 
         Parameters

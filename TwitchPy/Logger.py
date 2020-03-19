@@ -6,6 +6,7 @@
 #         the other file logger will only store chat messages
 #         >>> the problem with this is how is the user going to use filters effectively?
 #             if they've got 4 different loggers, how are they going to specify the filters for each?
+#               >>> we could create a class for loggers that hold a filter attribute
 
 
 
@@ -235,6 +236,7 @@ class Logger:
                 * 'Websocket-recv' : what twitch IRC sends back at us
                 * 'Websocket-error'
                 * 'Events-init'
+                * 'Commands-error'
 
 
             A full example might be: ['API-request_get', 'API-request_response', 'Websocket-send', 'Websocket-recv']
@@ -267,6 +269,9 @@ class Logger:
         },
         'Events': {
             'init': ()
+        },
+        'Commands': {
+            'error': ()
         }
         """
 

@@ -4,6 +4,8 @@
 #     * have add_cog take a list of cogs instead just to make it a bit easier to add multiple cogs
 #     * for all functions that take a list, make a check to see if they're a list and fix it if it's not.
 #     * do more input sanitization and throw errors
+#     * write examples for docs
+#     * should twitchbot save chat history? it would help a mock function
 
 
 
@@ -113,6 +115,7 @@ class Client:
             The cog to add to the bot. To see how to make a cog, see Commands.Cog .
         """
         asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
+        cog._init_attributes(self.logger, self.events)
         self.command_cogs.add(cog)
         asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
 

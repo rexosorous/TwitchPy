@@ -101,7 +101,7 @@ information on this, check out `Interacting With IRC`_.
 
 ``async def ping(self, chat):`` - Command functions must be asynchronous (``async``) and accept only one
 argument, ``chat`` , which is an instance of ``TwitchPy.ChatInfo.Chat`` which contains all the information
-about the message sent. You can access that information via its attribrutes which can be found in the `references`.
+about the message sent. You can access that information via its attribrutes which can be found in the references.
 
 ``await self.IRC.send('pong')`` - ``TwitchPy.Websocket.IRC.send()`` is an asynchronous function and must be
 ``await`` ed. In this case, this function sends 'pong' to twitch chat.
@@ -127,68 +127,65 @@ from the command name. ::
 
 This command is executed whenever a viewer says '!hello' and *won't* execute when a viewer says '!say_hello'.
 
-.. note:: Command names with spaces in it *should* work, but this isn't something we test for, so use at
-          your own risk.
+``name`` can also take a list of strings which allows you to create functions with several names. ::
 
-
-
-Using Multiple Names
-----------------------
-
-TwitchPy also allows you to create functions with several names with the kwarg ``aliases`` which takes a list of strings,
-all of which are different names you want the command to execute by. ::
-
-    @Commands.create(name='hello', aliases=['hi', 'howdy'])
+    @Commands.create(name=['hello', 'hi', 'howdy'])
     async def say_hello(self, chat):
         await self.IRC.send('HeyGuys')
 
-Here's the same command as before, but with aliases defined. So now the command will execute whenever a viewer says
+Here's the same command as before, but with multiple names. So now the command will execute whenever a viewer says
 '!hello' or '!hi' or '!howdy'.
 
+.. note:: Command names with spaces in it *should* work, but this isn't something we test for, so use at
+          your own risk.
 
 
 Using Arguments
 ----------------
 
-``TwitchPy.Commands.create()`` also lets you define how many arguments a function should expect with the kwarg \
-``argcount`` which takes an int value. ::
+If you want a command to expect some arguments, then all you have to do is add arguments to the function definition
+like you normally would. ::
 
-    @Commands.create(argcount=2):
-    async def checkcompatibility(self, chat):
-        compatibility = random.randint(0, 100)
-        await self.IRC.send(f'{chat.split_args[0]} and {chat.split_args[1]} have a compatibility of {compatibility}')
+    @Commands.create(name='mock'):
+    async def mock_user(self, chat, user):
+        msg = get_last_message(user)    # not a TwitchPy function. assume this exists somewhere in the program.
+        mocked_msg = ''
+        for char in msg:
+            if random.choice([True, False]):
+                mocked_msg += char.upper()
+            else:
+                mocked_msg += char.lower()
+        await self.IRC.send(mocked_msg)
 
-We expect the syntax for this command to be '!checkcompatibility {viewer1} {viewer2}' and will determine
-what the compatibility is between those two viewers (although we just generate that number randomly).
-But due to the nature of this command, we don't want it to execute if there are 0 arguments, 1 arguments,
-3 arguments, etc. So ``argcount=2`` means that the function ``checkcompatibility`` won't be called if there
-aren't two arguments.
+Here we have a command to mock a user's last message they sent in chat by randomizing the capitalization of each
+character. Because of the nature of the command, we need one argument ``user``. So ``mock_user`` will only get
+called if a viewer types in chat '!mock {user}' and **not** if they type '!mock' or '!mock lorem ipsum'.
 
-.. note:: ``argcount=0`` means that the command will only execute with 0 arguments
-.. note:: ``argcount=-1`` means that the command will execute with any number of arguments (this is the
-            default value if argcount is not defined)
+If you're unsure how many arguments a function might accept, you can use ``*args`` which will end up being
+a list of strings (each being an arg). ::
 
-The most interesting thing about this is that both ``name`` *and* ``argcount`` define command uniqueness.
-This means that we can have commands with the same name but different argcounts which will both call different
-functions. ::
+    @Commands.create(name='mock'):
+    async def mock_msg(self, chat, *args):
+        msg = ' '.join(args)
+        mocked_msg = ''
+        for char in msg:
+            if random.choice([True, False]):
+                mocked_msg += char.upper()
+            else:
+                mocked_msg += char.lower()
+        await self.IRC.send(mocked_msg)
 
-    @Commands.create(name='help', argcount=0)
-    async def help_general(self, chat):
-        # this sends a help message that shows each command with a short description
-        await self.IRC.send(help_msg)
+This is a command that mocks an entire message. So given the input '!mock hello world', the bot might respond
+with 'hELLO WOrlD'. Because of ``*args`` this command will execute regardless of how many args we send it.
 
-    @Commands.create(name='help', argcount=1)
-    async def help_specific(self, chat):
-        # this sends more detailed information about one specific command
-        await self.IRC.send(help[chat.split_args[0]])
-
-Here we have two commands named 'help' but with two different argcounts. The function ``help_general`` only gets
-called if the viewer says '!help' and the function ``help_specific`` only gets called if the viewer says
-'!help {arg}'. While we could combine this into one command by making some checks at the beginning, this could
-lead into more confusing and unorganized code for more complex functions. So we allow you to split commands like
-this so you can create more readable code
+Notice that ``mock_user`` and ``mock_msg`` both create a command with the name 'mock'. This is completely
+fine as long as they expect different amounts of args (not including ``*args``) - ``mock_user`` has an argcount
+of 1 while ``mock_msg`` has an argcount of 0. So whenever the mock command is called with only one arg, then
+``mock_user`` is called and if there's *any* other argcounts, then ``mock_msg`` will be called. That is to say,
+commands with more args (not counting ``*args``) are prioritized first.
 
 .. note:: If two commands have the same name and argcount, only one will execute
+.. note:: TwitchPy makes no effort to convert any args into other data types (like ints or floats).
 
 
 
@@ -201,9 +198,9 @@ Lastly, ``TwitchPy.Commands.create()`` let's you limit who is allowed to use a c
 ``permission`` takes a string and sets a base level for who can use this command based on the viewers'
 loyalty / affiliation. The hierarchy is: ``'broadcaster'`` > ``'moderator'`` > ``'subscriber'`` > ``'everyone'``. ::
 
-    @Commands.create(argcount=1, permission='moderator')
-    async def checkfollower(self, chat):
-        isfollower = self.API.follows_me(chat.split_args[0])
+    @Commands.create(permission='moderator')
+    async def checkfollower(self, chat, user):
+        isfollower = self.API.follows_me(user)
         await self.IRC.send(str(isfollower))
 
 This is a command that checks if a user is a follower of the channel or not. Because we don't want everyone to be
@@ -248,19 +245,15 @@ Quick Reference
 Here's a quick reference table for ``TwitchPy.Commands.create()``'s kwargs. For more information about these
 check the references!
 
-+--------------+-------------+----------------------------------------------------------------------------------+
-| kwarg        | data type   | description                                                                      |
-+==============+=============+==================================================================================+
-| name         | str         | the name of the command                                                          |
-+--------------+-------------+----------------------------------------------------------------------------------+
-| aliases      | list of str | any other names you want the command to execute by                               |
-+--------------+-------------+----------------------------------------------------------------------------------+
-| argcount     | int         | how many arguments the command should exepct                                     |
-+--------------+-------------+----------------------------------------------------------------------------------+
-| permissions  | str         | based on the viewer's loyalty to the server, who's allowed to use this command   |
-+--------------+-------------+----------------------------------------------------------------------------------+
-| whitelisting | list of str | by name, who's allowed exclusivity to this command                               |
-+--------------+-------------+----------------------------------------------------------------------------------+
++--------------+--------------------+----------------------------------------------------------------------------------+
+| kwarg        | data type          | description                                                                      |
++==============+====================+==================================================================================+
+| name         | str or list of str | the name of the command                                                          |
++--------------+--------------------+----------------------------------------------------------------------------------+
+| permissions  | str                | based on the viewer's loyalty to the server, who's allowed to use this command   |
++--------------+--------------------+----------------------------------------------------------------------------------+
+| whitelisting | list of str        | by name, who's allowed exclusivity to this command                               |
++--------------+--------------------+----------------------------------------------------------------------------------+
 
 .. note:: All of these kwargs are optional.
 
@@ -289,9 +282,9 @@ important bits.
 +========================+=============+=============================================================================+
 | chat.msg               | str         | the message received. this includes any command prefixes and command names. |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.full_args         | str         | the message without the command prefix and name.                            |
+| chat.arg_msg           | str         | the message without the command prefix and name.                            |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.split_args        | list of str | chat.full_args split by spaces.                                             |
+| chat.args              | list of str | chat.arg_msg split by spaces.                                               |
 +------------------------+-------------+-----------------------------------------------------------------------------+
 | chat.user              | object      | an instance of ``TwitchPy.UserInfo.User``                                   |
 +------------------------+-------------+-----------------------------------------------------------------------------+
@@ -534,6 +527,8 @@ associates the message with a log type. Here's a quick reference sheet for all o
 | 'Websocket-recv'       | what twitch IRC sends to us                                     |
 +------------------------+-----------------------------------------------------------------+
 | 'Events-init'          |                                                                 |
++------------------------+-----------------------------------------------------------------+
+| 'Commands-error'       |                                                                 |
 +------------------------+-----------------------------------------------------------------+
 
 You can filter out log messages by their log type by using ``TwitchPy.Logger.Logger.console_filter()`` and

@@ -35,7 +35,7 @@ class User:
     ------------
     Does not keep track of follower status because that requries an API call.
     """
-    def __init__(self, name: str, id: str, broadcaster: bool, moderator: bool, subscriber: bool, sub_length: int, badges: [str]):
+    def __init__(self, name: str, uid: str, broadcaster: bool, moderator: bool, subscriber: bool, sub_length: int, badges: [str]):
         # variables given
         self.name = name
         self.id = uid
