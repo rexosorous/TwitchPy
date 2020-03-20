@@ -1,7 +1,6 @@
 # TO DO:
 #     * give API auth token so it can do things that require it (ie. mod commands).
 #         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
-#     * have add_cog take a list of cogs instead just to make it a bit easier to add multiple cogs
 #     * for all functions that take a list, make a check to see if they're a list and fix it if it's not.
 #     * do more input sanitization and throw errors
 #     * write examples for docs
@@ -103,7 +102,7 @@ class Client:
 
 
 
-    def add_cog(self, cog):
+    def add_cogs(self, cogs: list):
         """Adds commands to the bot.
 
         Commands follow a cog system that lets you categorize groups of commands, mostly for organization.
@@ -111,13 +110,14 @@ class Client:
 
         Parameters
         ---------------
-        cog : Commands.Cog
-            The cog to add to the bot. To see how to make a cog, see Commands.Cog .
+        cog : [Commands.Cog]
+            The cogs to add to the bot. To see how to make a cog, see Commands.Cog .
         """
-        asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
-        cog._init_attributes(self.logger, self.events)
-        self.command_cogs.add(cog)
-        asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
+        for cog in cogs:
+            asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
+            cog._init_attributes(self.logger, self.events)
+            self.command_cogs.add(cog)
+            asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
 
 
 
