@@ -5,6 +5,7 @@ from urllib import request
 
 # TwitchPy modules
 from .errors import *
+from .util import *
 
 
 
@@ -115,7 +116,7 @@ class Helix:
 
 
 
-    async def get_user_info(self, user: [str]) -> list:
+    async def get_user_info(self, user: str or [str]) -> list:
         """Gets viewer info based on either their username or id.
 
         Reference: https://dev.twitch.tv/docs/api/reference#get-users
@@ -123,7 +124,7 @@ class Helix:
 
         Parameters
         -------------
-        user : [str]
+        user : str or [str]
             A list of strings of viewers to get info on. These strings can be the viewers' usernames or user IDs or a mixture of both.
 
             note: they MUST be strings, even though their user ID might be an int.
@@ -136,6 +137,8 @@ class Helix:
             'id': '1234567890', 'login': 'johndoe', 'offline_image_url': 'url here', 'profile_image_url': 'url here', 'type': 'staff',
             'view_count': 12345}]``
         """
+        user = makeiter(user)
+
         await self.logger.log(19, 'basic', f'getting info on user(s): {user}')
         endpoint = ''
         for u in user:

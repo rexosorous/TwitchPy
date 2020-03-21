@@ -18,6 +18,7 @@ from .API import Helix
 from .errors import *
 from .Events import Handler
 from .Logger import Logger
+from .util import *
 from .Websocket import IRC
 
 
@@ -110,9 +111,11 @@ class Client:
 
         Parameters
         ---------------
-        cog : [Commands.Cog]
+        cog : Commands.Cog or [Commands.Cog]
             The cogs to add to the bot. To see how to make a cog, see Commands.Cog .
         """
+        cogs = makeiter(cogs)
+
         for cog in cogs:
             asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
             cog._init_attributes(self.logger, self.events)
@@ -131,7 +134,7 @@ class Client:
 
         Parameters
         -------------
-        funcs : list
+        funcs : func or [func]
             A list of async functions that you want to run alongside (concurrently) with the bot's
             other functions. Some common uses for this is if you wanted the bot do something
             every x seconds.
@@ -144,9 +147,9 @@ class Client:
         try:
             asyncio.run(self.logger.log(20, 'basic', 'starting bot...'))
             self.events.on_run()
+            funcs = makeiter(funcs)
             self._listen_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._listen_loop)
-
             self._listen_loop.run_until_complete(self.IRC.connect())
             self._listen_loop.run_until_complete(self._start(funcs))
         except ExpectedExit as e:

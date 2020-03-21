@@ -6,6 +6,9 @@
 # python standard modules
 import inspect
 
+# TwitchPy modules
+from .util import *
+
 
 
 class Cog:
@@ -263,7 +266,7 @@ class Command:
 
 
 
-def create(*, name: str or [str]=[], permission: str='notset', whitelist: [str]=[]):
+def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or [str]=[]):
     """A decorator function used to create new commands.
 
     Requirements for creating your own command:
@@ -288,7 +291,7 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: [str]=
         Specifying any permission level implies that users with higher permission levels will be able to use the command.
         For example, permission='moderator' implies that both channel moderators and broadcasters can use it.
 
-    whitelist : [str] (optional)
+    whitelist : str or [str] (optional)
         Which viewers can use this command by name. If specified along with permission, permission will take
         precedence over whitelist.
 
@@ -367,8 +370,8 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: [str]=
     """
     def decorator(func):
         cmd_name = name or func.__name__
-        if isinstance(cmd_name, str):
-            cmd_name = [cmd_name]
+        cmd_name = makeiter(cmd_name)
+        whitelist = makeiter(whitelist)
         cmd = Command(func, names=cmd_name, permission=permission, whitelist=whitelist)
         return cmd
     return decorator
