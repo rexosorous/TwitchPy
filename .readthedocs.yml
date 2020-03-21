@@ -4,8 +4,8 @@ version: 2
 # Sphinx
 sphinx:
   builder: html
-  configuration: ./docs/conf.py
+  configuration: docs/source/conf.py
 
 # define python interpreter
 python:
-    version: 3.8
+   version: 3.8
