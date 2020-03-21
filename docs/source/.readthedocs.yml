@@ -1,0 +1,11 @@
+# Required
+version: 2
+
+# Sphinx
+sphinx:
+  builder: html
+  configuration: ./docs/conf.py
+
+# define python interpreter
+python:
+    version: 3.8

@@ -44,9 +44,6 @@ exclude_patterns = []
 # redefine master file
 master_doc = 'index'
 
-# define python interpreter
-python:
-    version: 3.8
 
 
 # -- Options for HTML output -------------------------------------------------
