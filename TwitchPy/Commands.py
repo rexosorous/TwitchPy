@@ -7,7 +7,9 @@
 import inspect
 
 # TwitchPy modules
-from .util import *
+from .Events import Handler
+from .Logger import Logger
+from .utilities import *
 
 
 
@@ -50,6 +52,12 @@ class Cog:
         See keyword arguments
 
 
+    Raises
+    ---------
+    TypeError
+        Raised if prefix, logger, and eventhandler are not the correct data types.
+
+
     Note
     -----------
     For the most part, you won't need to use these attributes in any meaningful way because TwitchPy
@@ -90,6 +98,14 @@ class Cog:
         kwarg   prefix  (required)  the prefix that will let the bot know to try to execute commands
                                     ex: if the prefix is '!', then the bot will ignore all messages that don't start with '!'
         """
+        # input sanitization
+        if (err_msg := check_param(prefix, str)):
+            raise TypeError(f'TwitchPy.Commands.Cog: {err_msg}')
+        if logger and (err_msg := check_param(logger, Logger)):
+            raise TypeError(f'TwitchPy.Commands.Cog: {err_msg}')
+        if eventhandler and (err_msg := check_param(eventhandler, Handler)):
+            raise TypeError(f'TwitchPy.Commands.Cog: {err_msg}')
+
         # variables given
         self.prefix = prefix
 
@@ -296,6 +312,12 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or
         precedence over whitelist.
 
 
+    Raises
+    -------------
+    TypeError
+        Raised if kwargs are not the data types they should be.
+
+
     Examples
     -----------
     For all of these examples, assume they're part of a class defined as such:
@@ -330,7 +352,7 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or
 
     This command says in chat 'VoHiYo' whenever a viewer says '!hello' followed by three words (arg1, arg2, arg3)
     So '!hello all my friends' or '!hello to everyone here' or '!hello a b c' would all work because there are
-    three words after the command nane. Note that we now have two commands with the name '!hello'. This is
+    three words (args) after the command nane. Note that we now have two commands with the name '!hello'. This is
     allowed because they work on two different argcounts. The function advancedhello is called only if there
     is three args and the function sayhello will get called whenever there's no args.
 
@@ -369,9 +391,21 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or
     or a broadcaster or not, will also be able to execute the command.
     """
     def decorator(func):
+        nonlocal whitelist
         cmd_name = name or func.__name__
         cmd_name = makeiter(cmd_name)
         whitelist = makeiter(whitelist)
+
+        # input sanitization
+        for n in cmd_name:
+            if not isinstance(n, str):
+                raise TypeError(f"TwitchPy.Commands.create(): name expects all elements to be 'str' not '{type(n)}'")
+        if (err_msg := check_param(permission, str)):
+            raise TypeError(f'TwitchPy.Commands.create(): {err_msg}')
+        for w in whitelist:
+            if not isinstance(w, str):
+                raise TypeError(f"TwitchPy.Commands.create(): whitelist expects str not {type(w)}")
+
         cmd = Command(func, names=cmd_name, permission=permission, whitelist=whitelist)
         return cmd
     return decorator

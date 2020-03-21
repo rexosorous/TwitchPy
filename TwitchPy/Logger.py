@@ -17,7 +17,9 @@ from sys import stdout
 
 # TwitchPy Modules
 from .errors import *
+from .Events import Handler
 from .ChatInfo import Chat
+from .utilities import *
 
 
 
@@ -88,6 +90,12 @@ class Logger:
         Note: This is not the filter from the logging library.
 
 
+    Raises
+    -------
+    TypeError
+        Raised if kwargs are not the correct data types.
+
+
     Note
     ---------
     We hold two instances of loggers (console and file) so you can more precisely control the behaviors of each,
@@ -109,6 +117,12 @@ class Logger:
     The on_log event will receive the same information that the logger would.
     """
     def __init__(self, *, preset: str='', chatfmt: str='%(user.name)s: %(msg)s'):
+        # input sanitization
+        if (err_msg := check_param(preset, str)):
+            raise TypeError(f"TwitchPy.Logger.Logger: {err_msg}")
+        if (err_msg := check_param(chatfmt, str)):
+            raise TypeError(f"TwitchPy.Logger.Logger: {err_msg}")
+
         # variables given
         self.chatfmt = chatfmt
 
@@ -153,7 +167,7 @@ class Logger:
 
             If not given, will default to '[%(levelname)-8s] [%(module)-10s] [%(asctime)s] %(message)s'
 
-        datfmt : str (optional)
+        datefmt : str (optional)
             See see https://docs.python.org/3/library/time.html#time.strftime
 
             If not given, will default to '%H:%M:%S'
@@ -163,7 +177,21 @@ class Logger:
             See https://docs.python.org/2/library/logging.html#logging-levels for logging's levels and
             see Logging for TwitchPy's custom levels.
             If not given, will default to 11 or Logging.INIT
+
+
+        Raises
+        --------
+        TypeError
+            Raised if kwargs are not the correct data type.
         """
+        # input sanitization
+        if (err_msg := check_param(fmt, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_console_logger(): {err_msg}')
+        if (err_msg := check_param(datefmt, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_console_logger(): {err_msg}')
+        if (err_msg := check_param(level, int)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_console_logger(): {err_msg}')
+
         self.console = logging.getLogger('console')
         console_handler = logging.StreamHandler(stdout)
         console_handler.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
@@ -190,7 +218,21 @@ class Logger:
 
         filemode : {'w', 'a'} (optional)
             The writing mode. If not given, will default to 'w'.
+
+
+        Raises
+        --------
+        TypeError
+            Raised if kwargs are not the correct data type.
         """
+        # input sanitization
+        if (err_msg := check_param(fmt, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_file_logger(): {err_msg}')
+        if (err_msg := check_param(datefmt, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_file_logger(): {err_msg}')
+        if (err_msg := check_param(level, int)):
+            raise TypeError(f'TwitchPy.Logger.Logger.create_file_logger(): {err_msg}')
+
         self.file = logging.getLogger('file')
         file_handler = logging.FileHandler(filename, filemode)
         file_handler.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
@@ -243,6 +285,12 @@ class Logger:
 
             We also support you setting up your own system of log types which is why we leave this field open ended
             instead of forcing you to stick to TwitchPy's filters.
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are not the correct data type.
         """
 
         """
@@ -274,8 +322,11 @@ class Logger:
             'error': ()
         }
         """
-
         for fil in filter_:
+            # input sanitization
+            if (err_msg := check_param(fil, str)):
+                raise TypeError(f'TwitchPy.Logger.Logger.console_filter(): {err_msg}')
+
             module = fil[:fil.find('-')]
             type_ = fil[fil.find('-')+1:]
             if module not in self.filter or type_ not in self.filter[module]:
@@ -291,6 +342,10 @@ class Logger:
         Note: this will only effect Logger.Logger.file
         """
         for fil in filter_:
+            # input sanitization
+            if (err_msg := check_param(fil, str)):
+                raise TypeError(f'TwitchPy.Logger.Logger.file_filter(): {err_msg}')
+
             module = fil[:fil.find('-')]
             type_ = fil[fil.find('-')+1:]
             if module not in self.filter or type_ not in self.filter[module]:
@@ -323,7 +378,20 @@ class Logger:
 
         exc : sys.exc_info() (optional)
             You only need this if you're logging an error and must be obtained from sys.exc_info()
+
+
+        Raises
+        ----------
+        TypeError
+            Raised if parameters are not the correct data type.
         """
+        # input sanitization
+        if (err_msg := check_param(level, int)):
+            raise TypeError(f'TwitchPy.Logger.Logger.log(): {err_msg}')
+        if (err_msg := check_param(type_, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.log(): {err_msg}')
+        if not isinstance(msg, str) and not isinstance(msg, Chat):
+            raise TypeError(f"TwitchPy.Logger.Logger.log(): msg expects 'str' or 'TwitchPy.ChatInfo.Chat' not {type(msg)}")
 
         # the following is a really cooky way to get information about the calling function
         # i don't rightly understand it too well, but it works
@@ -377,7 +445,17 @@ class Logger:
             This should be an instance of a class that inherits from Events.Handler .
             Normally, you shouldn't have to use this as the bot will do this for you, but this is here to give you
             more control over the bot if you want to do something very specific.
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are no the correct data type.
         """
+        # input sanitization
+        if (err_msg := check_param(events, Handler)):
+            raise TypeError(f"TwitchPy.Logger.Logger.set_eventhandler(): {err_msg}")
+
         self.events = events
 
 
@@ -390,7 +468,17 @@ class Logger:
         ---------------
         chatfmt : str
             See Logger.Logger for more details.
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are no the correct data type.
         """
+        # input sanitization
+        if (err_msg := check_param(chatfmt, str)):
+            raise TypeError(f'TwitchPy.Logger.Logger.set_chatfmt(): {err_msg}')
+
         self.chatfmt = chatfmt
 
 
@@ -406,16 +494,32 @@ class Logger:
         ------------
         logger : logging.Logger
             MUST be a logger created by the logging module.
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are no the correct data type.
         """
-        if not isinstance(logger, logging.Logger):
-            raise InvalidLogger
+        # input sanitization
+        if (err_msg := check_param(logger, Logger)):
+            raise TypeError(f'TwitchPy.Logger.Logger.set_console_logger(): {err_msg}')
+
         self.console = logger
 
 
 
     def set_file_logger(self, logger):
         """See Logger.Logger.set_console_logger()
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are no the correct data type.
         """
-        if not isinstance(logger, logging.Logger):
-            raise InvalidLogger
+        # input sanitization
+        if (err_msg := check_param(logger, Logger)):
+            raise TypeError(f'TwitchPy.Logger.Logger.set_eventhandler(): {err_msg}')
+
         self.file = logger

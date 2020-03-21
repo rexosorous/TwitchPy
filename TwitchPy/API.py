@@ -5,7 +5,7 @@ from urllib import request
 
 # TwitchPy modules
 from .errors import *
-from .util import *
+from .utilities import *
 
 
 
@@ -107,7 +107,16 @@ class Helix:
         dict
             The data received from the endpoint in dict format.
 
+
+        Raises
+        -------------
+        TypeError
+            Raised if endpoint parameter is not a string
         """
+        # input sanitization
+        if (err_msg := check_param(endpoint, str)):
+            raise TypeError(f'TwitchPy.API.Helix.get_endpoint(): {err_msg}')
+
         await self.logger.log(9, 'request_get', f'GET: {self.base_url}{endpoint}')
         req = request.Request(f'{self.base_url}{endpoint}', headers=self.header)
         response = json.loads(request.urlopen(req).read().decode())
@@ -136,12 +145,22 @@ class Helix:
             An example: ``[{'broadcaster_type': 'affiliate', 'description': 'example ' 'description ', 'display_name': 'johndoe',
             'id': '1234567890', 'login': 'johndoe', 'offline_image_url': 'url here', 'profile_image_url': 'url here', 'type': 'staff',
             'view_count': 12345}]``
+
+
+        Raises
+        -------------
+        TypeError
+            Raised if any element in user parameter is not a str
         """
         user = makeiter(user)
 
         await self.logger.log(19, 'basic', f'getting info on user(s): {user}')
         endpoint = ''
         for u in user:
+            # input sanitization
+            if not isinstance(u, str):
+                raise TypeError(f"TwitchPy.API.Helix.get_user_info(): user expects 'str' not '{type(u)}'")
+
             if u.isdigit():
                 endpoint += f'&id={u}'
             else:
@@ -190,7 +209,17 @@ class Helix:
         ----------
         bool
             True if the viewer does follow you. False if they don't.
+
+
+        Raises
+        -------------
+        TypeError
+            Raised if user_id parameter is not a string
         """
+        # input sanitization
+        if (err_msg := check_param(user_id, str)):
+            raise TypeError(f'TwitchPy.API.Helix.follows_me(): {err_msg}')
+
         await self.logger.log(19, 'basic', f'determing if {user_id} is a follower')
         response = await self.get_endpoint(f'/users/follows?to_id={self.broadcaster_id}&from_id={user_id}')
         return bool(response['total'])

@@ -1,9 +1,9 @@
 import setuptools
 
 setuptools.setup(   name='TwitchPy',
-                    version='1.2.0',
+                    version='1.2.1',
                     description='an asynchronous python wrapper API for twitch\'s IRC chat\')',
                     url='https://github.com/rexosorous/TwitchPy',
                     author='rexosorous',
                     packages=setuptools.find_packages(),
-                    python_requires='>=3.7')
+                    python_requires='>=3.8')

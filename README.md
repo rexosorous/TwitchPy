@@ -16,4 +16,4 @@ pip install git+https://github.com/rexosorous/TwitchPy
 ```
 
 # Requirements
-Python 3.7+
+Python 3.8+

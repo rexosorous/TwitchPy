@@ -1,8 +1,6 @@
 # TO DO:
 #     * give API auth token so it can do things that require it (ie. mod commands).
 #         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
-#     * for all functions that take a list, make a check to see if they're a list and fix it if it's not.
-#     * do more input sanitization and throw errors
 #     * write examples for docs
 #     * should twitchbot save chat history? it would help a mock function
 
@@ -15,10 +13,11 @@ import sys
 
 # TwitchPy modules
 from .API import Helix
+from .Commands import Cog
 from .errors import *
 from .Events import Handler
 from .Logger import Logger
-from .util import *
+from .utilities import *
 from .Websocket import IRC
 
 
@@ -78,8 +77,28 @@ class Client:
     tasks : list
         A list of functions to execute concurrently with the bot.
         See TwitchBot.Client.run() for more info.
+
+
+    Raises
+    ---------
+    TypeError
+        Raised if kwargs are not the correct data type.
     """
     def __init__(self, *, token: str, user: str, client_id: str, channel: str, logger=Logger(preset='default'), eventhandler=Handler()):
+        # input sanitization
+        if (err_msg := check_param(token, str)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if (err_msg := check_param(user, str)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if (err_msg := check_param(client_id, str)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if (err_msg := check_param(channel, str)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if (err_msg := check_param(logger, Logger)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if (err_msg := check_param(eventhandler, Handler)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+
         # variables given
         self.events = eventhandler
         self.logger = logger
@@ -113,11 +132,22 @@ class Client:
         ---------------
         cog : Commands.Cog or [Commands.Cog]
             The cogs to add to the bot. To see how to make a cog, see Commands.Cog .
+
+
+        Raises
+        ----------
+        TypeError
+            Raised if parameters are not the correct data type.
         """
         cogs = makeiter(cogs)
 
         for cog in cogs:
             asyncio.run(self.logger.log(11, 'init', f'adding cog {type(cog).__name__} ...'))
+
+            # input sanitization
+            if (err_msg := check_param(cog, Cog)):
+                raise TypeError(f'TwitchPy.TwitchBot.Client.add_cogs(): {err_msg}')
+
             cog._init_attributes(self.logger, self.events)
             self.command_cogs.add(cog)
             asyncio.run(self.logger.log(11, 'init', f'successfully added cog {type(cog).__name__}'))
@@ -143,11 +173,23 @@ class Client:
 
                 * Must have at least one call to asyncio.sleep(x) where x is an amount of time in seconds. This is what allows the concurrency. If you don't have this, the bot will get hung up on one of the tasks and not function properly.
                 * Must **NOT** take any arguments.
+
+
+        Raises
+        --------
+        TypeError
+            Raised if paramaters are not the correct data type.
         """
         try:
             asyncio.run(self.logger.log(20, 'basic', 'starting bot...'))
             self.events.on_run()
             funcs = makeiter(funcs)
+
+            # input sanitization
+            for func in funcs:
+                if not iscallable(func):
+                    raise TypeError(f"TwitchPy.TwitchBot.Client.run(): funcs expects 'function' not {type(func)}")
+
             self._listen_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._listen_loop)
             self._listen_loop.run_until_complete(self.IRC.connect())
@@ -185,8 +227,19 @@ class Client:
         -----------
         channel : str
             The channel to connect to.
+
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are not the correct data type.
         """
         await self.logger.log(19, 'basic', f'changing channels to {channel}')
+
+        # input sanitization
+        if (err_msg := check_param(channel, str)):
+            raise TypeEror(f'TwitchPy.TwitchBot.Client.change_channel(): {err_msg}')
+
         self.API.broadcaster_name = channel
         self.API._test_connection()
         await self.IRC._join(channel)

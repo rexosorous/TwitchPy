@@ -6,6 +6,7 @@ import sys
 from .ChatInfo import Chat
 from .errors import *
 from .UserInfo import User
+from .utilities import *
 
 
 
@@ -133,7 +134,17 @@ class IRC:
         -------------
         msg : str
             The message that IRC is expecting like 'CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership'.
+            Note: you do not need to convert this to bytes.
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are not the correct data type.
         '''
+        # input sanitization
+        if (err_msg := check_param(msg, str)):
+            raise TypeError(f'TwitchPy.Websocket.IRC.basic_send(): {err_msg}')
+
         await self.logger.log(9, 'send', f'SEND: "{msg}"')
         self.writer.write(f'{msg}\r\n'.encode())
         await self.writer.drain()
@@ -147,7 +158,16 @@ class IRC:
         -----------
         msg : str
             The message that you want to show up in twitch chat.
+
+        Raises
+        ---------
+        TypeError
+            Raised if parameters are not the correct data type.
         '''
+        # input sanitization
+        if (err_msg := check_param(msg, str)):
+            raise TypeError(f'TwitchPy.Websocket.IRC.send(): {err_msg}')
+
         chat = Chat(self.channel)
         chat.msg = msg
         chat.user = User(self.user, '', False, False, False, False, [])
