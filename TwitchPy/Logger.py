@@ -95,6 +95,9 @@ class Logger:
     TypeError
         Raised if kwargs are not the correct data types.
 
+    ValueError
+        Raised if the kwarg, preset, is not the correct value.
+
 
     Note
     ---------
@@ -122,6 +125,8 @@ class Logger:
             raise TypeError(f"TwitchPy.Logger.Logger: {err_msg}")
         if (err_msg := check_param(chatfmt, str)):
             raise TypeError(f"TwitchPy.Logger.Logger: {err_msg}")
+        if preset not in ['default', 'recommended']:
+            raise ValueError(f"TwitchPy.Logger.Logger: preset expects 'default' or 'recommended' not '{preset}'")
 
         # variables given
         self.chatfmt = chatfmt

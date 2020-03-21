@@ -317,6 +317,9 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or
     TypeError
         Raised if kwargs are not the data types they should be.
 
+    ValueError
+        Raised if the kwarg, permission, is not the correct value.
+
 
     Examples
     -----------
@@ -404,7 +407,9 @@ def create(*, name: str or [str]=[], permission: str='notset', whitelist: str or
             raise TypeError(f'TwitchPy.Commands.create(): {err_msg}')
         for w in whitelist:
             if not isinstance(w, str):
-                raise TypeError(f"TwitchPy.Commands.create(): whitelist expects str not {type(w)}")
+                raise TypeError(f"TwitchPy.Commands.create(): whitelist expects 'str' not '{type(w)}'")
+        if permission not in ['notset', 'everyone', 'subscriber', 'moderator', 'broadcaster']:
+            raise ValueError(f"TwitchPy.Commands.create(): permission expects 'notset', 'everyone', 'subscriber', 'moderator', or 'broadcaster' not '{permssion}'")
 
         cmd = Command(func, names=cmd_name, permission=permission, whitelist=whitelist)
         return cmd
