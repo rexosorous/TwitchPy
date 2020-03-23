@@ -2,7 +2,6 @@
 #     * give API auth token so it can do things that require it (ie. mod commands).
 #         * for instance, if i wanted to implement a feature that allowed a user to spend 500 points to ban someone or something, i can do that
 #     * write examples for docs
-#     * should twitchbot save chat history? it would help a mock function
 
 
 
@@ -45,6 +44,9 @@ class Client:
     channel : str
         The channel you want the bot to connect to.
 
+    chatlimit : int
+        The maximum number of chat messages to hold on to. See Websocket.IRC
+
     logger : Logger.Logger (optional)
         The bot's custom logger. If not given, TwitchPy will give you a very basic logger (see Logger.Logger preset='default').
 
@@ -84,7 +86,7 @@ class Client:
     TypeError
         Raised if kwargs are not the correct data type.
     """
-    def __init__(self, *, token: str, user: str, client_id: str, channel: str, logger=Logger(preset='default'), eventhandler=Handler()):
+    def __init__(self, *, token: str, user: str, client_id: str, channel: str, chatlimit: int=None, logger=Logger(preset='default'), eventhandler=Handler()):
         # input sanitization
         if (err_msg := check_param(token, str)):
             raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
@@ -93,6 +95,8 @@ class Client:
         if (err_msg := check_param(client_id, str)):
             raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
         if (err_msg := check_param(channel, str)):
+            raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
+        if chatlimit != None and (err_msg := check_param(chatlimit, int)):
             raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
         if (err_msg := check_param(logger, Logger)):
             raise TypeError(f'TwitchPy.TwitchBot.Client: {err_msg}')
@@ -110,7 +114,7 @@ class Client:
         # variables created
         self.command_cogs = set()
         self.API = Helix(logger=self.logger, channel=channel, cid=client_id)
-        self.IRC = IRC(logger=self.logger, commands=self.command_cogs, events=self.events, token=token, user=user, channel=channel)
+        self.IRC = IRC(logger=self.logger, commands=self.command_cogs, events=self.events, token=token, user=user, channel=channel, chatlimit=chatlimit)
         self.events._init_events(logger=self.logger, API=self.API, IRC=self.IRC)
         self.tasks = []     # for asyncio concurrency
         self._listen_loop = None

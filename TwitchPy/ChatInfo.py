@@ -53,7 +53,7 @@ class Chat:
 
         ex: ['lorem', 'ipsum']
 
-    user : User
+    author : User
         Object containing basic information about the viewer who sent the message
 
 
@@ -71,7 +71,7 @@ class Chat:
         self.msg = ''           # includes bot prefix and command name
         self.arg_msg = ''       # msg without prefix or command name
         self.args = []          # arg_msg split by spaces to better access them
-        self.user = None
+        self.author = None
 
 
 

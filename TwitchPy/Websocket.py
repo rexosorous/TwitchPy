@@ -1,5 +1,6 @@
 # python standard modules
 import asyncio
+from copy import deepcopy
 import sys
 
 # TwitchPy modules
@@ -38,10 +39,20 @@ class IRC:
     channel : str
         The channel to connect to.
 
+    chatlimit : int
+        The maximum number of chat messages that chat_history attribute should hold on to.
+        If chat_history becomes full (number of messages equals or exceeds chatlimit),
+        delete messages to make space for newer ones.
+
 
     Attributes
     --------------
     See parameters
+
+    chat_history : [TwitchPy.ChatInfo.Chat]
+        A list of all messages sent through twitch IRC during the bot's runtime.
+        Newest messages will be at the front (position 0) while older messages will be at the back.
+        Note: Chats will only be inserted into the list after any command invocation (if any).
 
     reader : asyncio.StreamReader
         The object that's responsible for reading from twitch chat.
@@ -53,7 +64,7 @@ class IRC:
 
         See https://docs.python.org/3/library/asyncio-stream.html#streamwriter
     """
-    def __init__(self, logger, commands, events, token: str, user: str, channel: str):
+    def __init__(self, logger, commands, events, token: str, user: str, channel: str, chatlimit: int):
         # log
         self.logger = logger
         asyncio.run(self.logger.log(11, 'init', 'initializing IRC...'))
@@ -64,8 +75,10 @@ class IRC:
         self.token = token          # oauth token
         self.user = user            # bot's username
         self.channel = channel      # channel to connect to
+        self.chatlimit = chatlimit
 
         # variables created
+        self.chat_history = []
         # these will be set during self.connect()
         self.reader = None
         self.writer = None
@@ -213,5 +226,9 @@ class IRC:
 
                     for cog in self.commands:
                             await cog._choose_command(chat)
+
+                    if self.chatlimit != None and len(self.chat_history) >= self.chatlimit:
+                        del self.chat_history[self.chatlimit-1:]
+                    self.chat_history.insert(0, chat)
         finally:
             await self.disconnect()

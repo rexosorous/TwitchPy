@@ -77,12 +77,12 @@ Here's a basic example::
             self.IRC = IRC                  # obtained from TwitchBot.Client so we can interact with chat
 
         @Commands.create()                  # decorator used to create the command
-        async def ping(self, chat):         # the function must take one argument: chat
+        async def ping(self, ctx):         # the function must take one argument: chat
             await self.IRC.send('pong')
 
     bot = TwitchBot.Client(**login)
     my_commands = MyCommands(bot.get_IRC())
-    bot.add_cog(my_commands)                # don't forget to add the cog to the bot
+    bot.add_cogs(my_commands)                # don't forget to add the cog to the bot
     bot.run()
 
 Let's break this down.
@@ -99,15 +99,15 @@ information on this, check out `Interacting With IRC`_.
 
 ``@Commands.create()`` - A function decorator that creates commands and should precede every command function.
 
-``async def ping(self, chat):`` - Command functions must be asynchronous (``async``) and accept only one
-argument, ``chat`` , which is an instance of ``TwitchPy.ChatInfo.Chat`` which contains all the information
-about the message sent. You can access that information via its attribrutes which can be found in the references.
+``async def ping(self, ctx):`` - Command functions must be asynchronous (``async``) and accept only one
+argument, ``ctx`` , which is an instance of ``TwitchPy.ChatInfo.Chat`` which contains all the information
+about the message sent. You can access that information via its attributes which can be found in the references.
 
 ``await self.IRC.send('pong')`` - ``TwitchPy.Websocket.IRC.send()`` is an asynchronous function and must be
 ``await`` ed. In this case, this function sends 'pong' to twitch chat.
 
-``bot.add_cog(my_commmands)`` - After creating an instance of your command class, you have to add it to the
-bot via ``TwitchPy.Client.add_cog()``.
+``bot.add_cogs(my_commmands)`` - After creating an instance of your command class, you have to add it to the
+bot via ``TwitchPy.Client.add_cogs()``.
 
 With this we've created a bot with a command cog that uses the prefix '!' and has one command called 'ping' that
 causes the bot to reply in chat with 'pong'. So whenever a viewer types in chat '!ping', the bot will say 'pong'.
@@ -122,7 +122,7 @@ In the last example, the bot used the function name as the command name, but tha
 from the command name. ::
 
     @Commands.create(name='hello')
-    async def say_hello(self, chat):
+    async def say_hello(self, ctx):
         await self.IRC.send('HeyGuys')
 
 This command is executed whenever a viewer says '!hello' and *won't* execute when a viewer says '!say_hello'.
@@ -130,7 +130,7 @@ This command is executed whenever a viewer says '!hello' and *won't* execute whe
 ``name`` can also take a list of strings which allows you to create functions with several names. ::
 
     @Commands.create(name=['hello', 'hi', 'howdy'])
-    async def say_hello(self, chat):
+    async def say_hello(self, ctx):
         await self.IRC.send('HeyGuys')
 
 Here's the same command as before, but with multiple names. So now the command will execute whenever a viewer says
@@ -147,7 +147,7 @@ If you want a command to expect some arguments, then all you have to do is add a
 like you normally would. ::
 
     @Commands.create(name='mock'):
-    async def mock_user(self, chat, user):
+    async def mock_user(self, ctx, user):
         msg = get_last_message(user)    # not a TwitchPy function. assume this exists somewhere in the program.
         mocked_msg = ''
         for char in msg:
@@ -165,7 +165,7 @@ If you're unsure how many arguments a function might accept, you can use ``*args
 a list of strings (each being an arg). ::
 
     @Commands.create(name='mock'):
-    async def mock_msg(self, chat, *args):
+    async def mock_msg(self, ctx, *args):
         msg = ' '.join(args)
         mocked_msg = ''
         for char in msg:
@@ -199,7 +199,7 @@ Lastly, ``TwitchPy.Commands.create()`` let's you limit who is allowed to use a c
 loyalty / affiliation. The hierarchy is: ``'broadcaster'`` > ``'moderator'`` > ``'subscriber'`` > ``'everyone'``. ::
 
     @Commands.create(permission='moderator')
-    async def checkfollower(self, chat, user):
+    async def checkfollower(self, ctx, user):
         isfollower = self.API.follows_me(user)
         await self.IRC.send(str(isfollower))
 
@@ -217,7 +217,7 @@ The kwarg ``whitelist`` takes a list of strings with each element being a userna
 want to be able to use the command. ::
 
     @Commands.create(whitelist='someviewer')
-    async def VIP(self, chat):
+    async def VIP(self, ctx):
         await self.IRC.send('PogChamp s in chat for someviewer!')
 
 This is a command that can *only* be used by someviewer. If anyone else tries to use it (even the broadcaster),
@@ -232,7 +232,7 @@ If both ``permission`` and ``whitelist`` are defined, the ``permission`` will ta
 ``whitelist``. ::
 
     @Commands.create(permission='moderator', whitelist='someviewer')
-    async def AmISpecial(self, chat):
+    async def AmISpecial(self, ctx):
         await self.IRC.send('yes')
 
 This command can only be used by any moderator, any broadcaster, and any viewer named 'someviewer'.
@@ -265,43 +265,108 @@ check the references!
 Interacting With IRC
 ======================
 
+
+Sending Messages
+-------------------
+
 ``TwitchPy.Websocket.IRC`` is the class that handles the IRC connection and is responsible for connecting
 to a channel, reading twitch chat, and sending messages to twitch chat. Most of the class' functions aren't
 useful or available to you, but the one that you should know is ``TwitchPy.Websocket.IRC.send(msg)``
-where msg is the message you want sent to twitch chat. To obtain the instance of this that the bot uses,
-you can use ``TwitchPy.TwitchBot.Client.IRC`` to access the attribute directly or use a getter function
-``TwitchPy.TwitchBot.Client.get_IRC()``. Either works and is perfectly fine to use.
+where msg is the message you want sent to twitch chat. Because this function is an async function, it should
+be awaited. ::
+
+    from TwitchPy import TwitchBot, Commands
+
+    class MyCommands(Commands.Cog)
+        def __init__(self, IRC):
+            super().__init__(prefix='!')
+            self.IRC = IRC
+
+        @Commands.create():
+            async def ping(self, ctx):
+                await self.IRC.send('pong')
+
+    bot = TwitchBot.Client(**login)
+    mycog = MyCommands(bot.get_IRC())
+    bot.add_cogs([mycog])
+    bot.run()
+
+To obtain the instance of ``TwitchPy.Websocket.IRC`` that the bot uses, you can use ``TwitchPy.TwitchBot.Client.IRC``
+to access the attribute directly or use a getter function ``TwitchPy.TwitchBot.Client.get_IRC()``. Either works and
+is perfectly fine to use.
+
+
+Receiving Messages
+-------------------
 
 Whenever a message is received from twitch chat, TwitchPy will create an instance of ``TwitchPy.ChatInfo.Chat``
-which contains all the information about that message. This is what's sent to any command functions you create.
-You can read about all the attribrutes you can access in references, but here's a short rundown of the
-important bits.
+which contains all the information about that message. This is the ``ctx`` parameter that's sent to any command
+functions you create. You can read about all the attributes you can access in references, but here's a short
+rundown of the important bits.
 
 +------------------------+-------------+-----------------------------------------------------------------------------+
 | field                  | data type   | description                                                                 |
 +========================+=============+=============================================================================+
-| chat.msg               | str         | the message received. this includes any command prefixes and command names. |
+| ctx.msg                | str         | the message received. this includes any command prefixes and command names. |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.arg_msg           | str         | the message without the command prefix and name.                            |
+| ctx.arg_msg            | str         | the message without the command prefix and name.                            |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.args              | list of str | chat.arg_msg split by spaces.                                               |
+| ctx.args               | list of str | ctx.arg_msg split by spaces.                                                |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user              | object      | an instance of ``TwitchPy.UserInfo.User``                                   |
+| ctx.author             | object      | an instance of ``TwitchPy.UserInfo.User``                                   |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.name         | str         | who sent the message.                                                       |
+| ctx.author.name        | str         | who sent the message.                                                       |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.id           | str         | the ID of the viewer who sent the message.                                  |
+| ctx.author.id          | str         | the ID of the viewer who sent the message.                                  |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.broadcaster  | bool        | whether or not the viewer is the broadcaster/streamer.                      |
+| ctx.author.broadcaster | bool        | whether or not the viewer is the broadcaster/streamer.                      |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.moderator    | bool        | whether or not the viewer is a moderator.                                   |
+| ctx.author.moderator   | bool        | whether or not the viewer is a moderator.                                   |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.subscriber   | bool        | whether or not the viewer is a subscriber.                                  |
+| ctx.author.subscriber  | bool        | whether or not the viewer is a subscriber.                                  |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.sub_length   | int         | how long the viewer has been a sub.                                         |
+| ctx.author.sub_length  | int         | how long the viewer has been a sub.                                         |
 +------------------------+-------------+-----------------------------------------------------------------------------+
-| chat.user.badges       | list of str | what badges the viewer has.                                                 |
+| ctx.author.badges      | list of str | what badges the viewer has.                                                 |
 +------------------------+-------------+-----------------------------------------------------------------------------+
+
+
+Here's an example that pings the user who calls the command '!pingme': ::
+
+        @Commands.create():
+            async def pingme(self, ctx):
+                await self.IRC.send(f'@{ctx.user.name}')
+
+
+Chat History
+---------------
+
+By default, TwitchPy will also keep a history of every chat message received (not messages sent by the bot)
+during its runtime. This history is stored in the attribute ``TwitchPy.Websocket.IRC.chat_history``, which
+is a list of ``TwitchPy.ChatInfo.Chat`` instances. Newest message will be stored in the front (position 0)
+while the oldest message will be stored in the rear (the last position).
+
+Because the chat history is stored in a list, you can iterate through it quite simply with a loop: ::
+
+    @Commands.create()
+    async def get_newest_message(self, ctx, viewer):
+        # echoes the newest message sent by a viewer
+        for chat in IRC.chat_history:
+            if chat.user.name == viewer:
+                await IRC.send(chat.msg)
+                return
+
+.. note:: TwitchPy will only save messages *after* command invocations (if there is one). So in the above
+          example, ``IRC.chat_history[0]`` will *not* be '!get_newest_message someviewer' until after
+          ``get_newest_message()`` has finished executing.
+
+In most cases, this shouldn't use a noticeable amount of memory, but in case you have a very active chat
+or streaming games that demand a lot of memory, or just don't have that much memory to begin with, you
+can limit the number of messages saved to cut down on memory usage with ``TwitchPy.TwitchBot.Client``'s
+kwarg, ``chatlimit`` which takes an int. For example ``TwitchPy.TwitchBot.Client(**login, chatlimit=100)``
+will only save 100 messages at a time. When the limit is reached and a new message comes in, the oldest
+message will be deleted to make room for the new one. If you didn't want to save any messages, just
+set ``chatlimit`` to 0: ``TwitchPy.TwitchBot.Client(**login, chatlimit=0)``
 
 
 
@@ -468,7 +533,7 @@ Chat Format
 This is how you want chat messages to be formatted. This format is entirely TwitchPy, unlike the the others which
 were all a part of the ``logging`` library. So your variables should be in the scope of ``TwitchPy.ChatInfo.Chat`` .
 For a quick reference of the variables, you can look at `Interacting With IRC`_ , just make sure not to lead the
-variable names with ``chat`` . Also, this is the only format that has to be sent to ``TwitchPy.Logger.Logger``
+variable names with ``ctx`` . Also, this is the only format that has to be sent to ``TwitchPy.Logger.Logger``
 directly instead of through ``TwitchPy.Logger.Logger.create_console_logger()`` which means that both loggers will
 use this format.
 
@@ -662,7 +727,7 @@ Let's take a look at a quick example: ::
             self.logger = logger
 
         @Commands.create()
-        async def ping(self, chat):
+        async def ping(self, ctx):
             self.logger.log(20, 'connection_test', 'ping command executed.')
 
     MyLoggers = Logger.Logger()
@@ -671,7 +736,7 @@ Let's take a look at a quick example: ::
     mycog = MyCommands(MyLoggers)
 
     bot = TwitchBot.Client(**login, logger=MyLoggers)
-    bot.add_cog(mycog)
+    bot.add_cogs(mycog)
     bot.run()
 
 With this program, the message 'ping command executed.' will be logged with level 20 and type 'connection_test'
@@ -708,7 +773,7 @@ the ``on_cmd()`` function, and pass it to ``TwitchPy.TwitchBot.Client`` using th
             super().__init__()
             self.use_count = 0
 
-        async def on_cmd(self, chat):
+        async def on_cmd(self, ctx):
             self.use_count += 1
 
     bot = TwitchBot.Client(**login, eventhandler=MyEventHandler())
@@ -774,4 +839,4 @@ Read the References!
 
 Hopefully these guides are all you need to understand and use the bot. But that doesn't mean we went over every function.
 I'm sure you're tired of hearing us say it, but if you're looking for more information on something, then take a peak at the
-references for a break down of the modules and all their classes, attribrutes, and functions.
+references for a break down of the modules and all their classes, attributes, and functions.
