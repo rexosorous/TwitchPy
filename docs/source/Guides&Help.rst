@@ -158,7 +158,7 @@ like you normally would. ::
         await self.IRC.send(mocked_msg)
 
 Here we have a command to mock a user's last message they sent in chat by randomizing the capitalization of each
-character. Because of the nature of the command, we need one argument ``user``. So ``mock_user`` will only get
+character. Because of the nature of the command, we need one argument ``user``. So ``mock_user()`` will only get
 called if a viewer types in chat '!mock {user}' and **not** if they type '!mock' or '!mock lorem ipsum'.
 
 If you're unsure how many arguments a function might accept, you can use ``*args`` which will end up being
@@ -178,10 +178,10 @@ a list of strings (each being an arg). ::
 This is a command that mocks an entire message. So given the input '!mock hello world', the bot might respond
 with 'hELLO WOrlD'. Because of ``*args`` this command will execute regardless of how many args we send it.
 
-Notice that ``mock_user`` and ``mock_msg`` both create a command with the name 'mock'. This is completely
-fine as long as they expect different amounts of args (not including ``*args``) - ``mock_user`` has an argcount
-of 1 while ``mock_msg`` has an argcount of 0. So whenever the mock command is called with only one arg, then
-``mock_user`` is called and if there's *any* other argcounts, then ``mock_msg`` will be called. That is to say,
+Notice that ``mock_user()`` and ``mock_msg()`` both create a command with the name 'mock'. This is completely
+fine as long as they expect different amounts of args (not including ``*args``) - ``mock_user()`` has an argcount
+of 1 while ``mock_msg()`` has an argcount of 0. So whenever the mock command is called with only one arg, then
+``mock_user()`` is called and if there's *any* other argcounts, then ``mock_msg()`` will be called. That is to say,
 commands with more args (not counting ``*args``) are prioritized first.
 
 .. note:: If two commands have the same name and argcount, only one will execute
@@ -205,7 +205,7 @@ loyalty / affiliation. The hierarchy is: ``'broadcaster'`` > ``'moderator'`` > `
 
 This is a command that checks if a user is a follower of the channel or not. Because we don't want everyone to be
 able to use this command, we set ``permission='moderator'`` which means that only moderators *and* broadcasters
-(the streamer) can use this command. If anyone else tries to use this command, the function ``checkfollower``
+(the streamer) can use this command. If anyone else tries to use this command, the function ``checkfollower()``
 does not get called.
 
 
@@ -239,23 +239,47 @@ This command can only be used by any moderator, any broadcaster, and any viewer 
 
 
 
-Quick Reference
-------------------
+Using Multiple Cogs
+---------------------
 
-Here's a quick reference table for ``TwitchPy.Commands.create()``'s kwargs. For more information about these
-check the references!
+For bigger and more complex bots, you may want to split up your commands amongst multiple cogs to better organize
+your code. For example, you may want one cog dedicated for commands that send a constant/static messsage. ::
 
-+--------------+--------------------+----------------------------------------------------------------------------------+
-| kwarg        | data type          | description                                                                      |
-+==============+====================+==================================================================================+
-| name         | str or list of str | the name of the command                                                          |
-+--------------+--------------------+----------------------------------------------------------------------------------+
-| permissions  | str                | based on the viewer's loyalty to the server, who's allowed to use this command   |
-+--------------+--------------------+----------------------------------------------------------------------------------+
-| whitelisting | list of str        | by name, who's allowed exclusivity to this command                               |
-+--------------+--------------------+----------------------------------------------------------------------------------+
+    class MainCommands(Commands.Cog)
+    def __init__(self, IRC):
+        super().__init__(prefix='!')
+        self.IRC = IRC
 
-.. note:: All of these kwargs are optional.
+    @Commands.create()
+    async def foo(self, ctx):
+        do_bar()
+
+
+    class CopyPastaCommands(Commands.Cog)
+    def __init__(self, IRC):
+        super().__init__(prefix='?')
+        self.IRC = IRC
+
+    @Commands.create()
+    async def help(self, ctx):
+        await self.IRC.send('help message')
+
+
+    bot = TwitchBot.Client(**login)
+    main = MainCommands(bot.get_IRC())
+    copypasta = CopyPastaCommands(bot.get_IRC())
+    bot.add_cogs([main, copypasta])
+    bot.run()
+
+Here we have ``CopyPastaCommands`` that we are going to dedicate for commands that send a constant/static message.
+We can use ``TwitchPy.TwitchBot.Client.add_cogs()`` to send both cogs in a list instead of calling ``add_cogs()``
+twice.
+
+Notice that the cogs have different prefixes from each other. This is the only possible with multiple cogs. So now
+``help()`` won't be called if a viewer says '!help', but only if they say '?help' because the prefix is different.
+
+.. note:: If multiple separate cogs have the same prefix and have commands with the same name(s) and argcounts, all
+          of those command functions will be called when the command executed, not just one.
 
 
 
@@ -426,6 +450,9 @@ For that you can create an async function and pass it to ``TwitchPy.TwitchBot.Cl
 
 We support you sending in multiple functions to run concurrently which is why ``TwitchPy.TwitchBot.Client.run()``
 expects a list.
+
+.. note:: Any Functions you want to run concurrently CANNOT take any arguments, except for self if used
+          correctly.
 
 .. note:: Any functions you want to run concurrently MUST include ``await asyncio.sleep(x)`` where x
           is a time in seconds. This is what enables the concurrency. Without this, the bot will get

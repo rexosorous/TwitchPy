@@ -232,8 +232,13 @@ class Helix:
 
         Returns
         ------------
-        dict
-            An example: ``{"_links": {}, "chatter_count": 1, "chatters": {"broadcaster": ["broadcaster username"], "vips": [],
+        list
+            A list of strings whose elements are users in chat.
+
+
+        Note
+        --------
+        An example of what we get: ``{"_links": {}, "chatter_count": 1, "chatters": {"broadcaster": ["broadcaster username"], "vips": [],
             "moderators": ["mod1"], "staff": [], "admins": [], "global_mods": [], "viewers": ["viewer1", "viewer2"]}}``
 
 
@@ -243,6 +248,11 @@ class Helix:
         """
         await self.logger.log(19, 'basic', 'getting viewers')
         await self.logger.log(9, 'request_get', f'GET tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters')
-        req = json.loads(request.urlopen(f'https://tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters').read().decode())
+        response = json.loads(request.urlopen(f'https://tmi.twitch.tv/group/user/{self.broadcaster_name}/chatters').read().decode())
         await self.logger.log(9, 'request_response', f'response: {response}')
-        return response
+
+        simple_response = []
+        for chatter_type in response['chatters'].values():
+            simple_response += chatter_type
+
+        return simple_response
